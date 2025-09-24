@@ -1,0 +1,34 @@
+# Arduino build artifacts
+*.bin
+*.elf
+*.map
+
+# Build folders (Arduino IDE / PlatformIO)
+build/
+.pio/
+*.ino.cpp
+
+# Python (tests)
+__pycache__/
+.venv/
+.env
+*.ipynb_checkpoints
+
+# CAD / 3D printing
+*.stl
+*.step
+*.obj
+*.3mf
+*.gcode
+~$*.*
+*.bak
+
+# Logs & raw data
+tests/data/*.log
+tests/data/*_raw.csv
+
+# OS / editor junk
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
