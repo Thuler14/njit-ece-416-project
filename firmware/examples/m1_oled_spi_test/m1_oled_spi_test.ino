@@ -5,15 +5,7 @@
 // Bus: VSPI (4-wire SPI + CS)
 // ====================================================
 
-#include <U8g2lib.h>
-
-#include "../../ui/config.h"  // Centralized constants
-
-U8G2_SSD1309_128X64_NONAME2_F_4W_HW_SPI u8g2(
-    U8G2_R0,  // rotation
-    /* cs=*/PIN_OLED_CS,
-    /* dc=*/PIN_OLED_DC,
-    /* reset=*/PIN_OLED_RST);
+#include "../../ui/config.h"  // Centralized configuration
 
 void setup() {
   Serial.begin(115200);
