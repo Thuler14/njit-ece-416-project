@@ -4,11 +4,11 @@ ESP32-based prototype that mixes hot/cold water to a user-selected setpoint usin
 
 ## Quick Start (Arduino IDE)
 1. Arduino IDE → Boards Manager → **esp32 by Espressif Systems**  
-2. Libraries: **OneWire**, **DallasTemperature**, **ESP32Servo**, **U8g2**, **Keypad**
+2. Libraries: **OneWire**, **DallasTemperature**, **ESP32Servo**, **U8g2**
 3. Open `firmware/control/` and `firmware/ui/` sketches in separate IDE windows.
 4. Upload to two ESP32 boards:
    - **Control**: sensors + PID + servo
-   - **UI**: keypad + OLED + ESP-NOW sender
+   - **UI**: push button + OLED + ESP-NOW sender
 5. Set MAC of control board in the UI sketch; set DS18B20 addresses in control sketch.
 
 ## Repository Structure
@@ -16,7 +16,7 @@ ESP32-based prototype that mixes hot/cold water to a user-selected setpoint usin
 njit-ece-416-project/
 ├─ firmware/
 │  ├─ control/          # ESP32: sensors, PID, servo
-│  └─ ui/               # ESP32: keypad, OLED, ESP-NOW
+│  └─ ui/               # ESP32: push button, OLED, ESP-NOW
 ├─ mechanical/
 │  ├─ cad/              # 3D models, mounts, enclosure
 │  └─ photos/           # Assembly & testbed images
