@@ -14,15 +14,6 @@ __pycache__/
 .env
 *.ipynb_checkpoints
 
-# CAD / 3D printing
-*.stl
-*.step
-*.obj
-*.3mf
-*.gcode
-~$*.*
-*.bak
-
 # Logs & raw data
 tests/data/*.log
 tests/data/*_raw.csv
