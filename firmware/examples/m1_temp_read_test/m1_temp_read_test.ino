@@ -13,8 +13,8 @@
 OneWire oneWire(PIN_TEMP_ONEWIRE);
 DallasTemperature sensors(&oneWire);
 
-DeviceAddress T_HOT = ADDR_T_HOT;
 DeviceAddress T_COLD = ADDR_T_COLD;
+DeviceAddress T_HOT = ADDR_T_HOT;
 DeviceAddress T_OUT = ADDR_T_OUT;
 
 float readF(const DeviceAddress addr) {

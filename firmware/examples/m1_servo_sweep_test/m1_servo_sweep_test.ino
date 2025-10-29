@@ -19,8 +19,8 @@ void setup() {
   sHot.setPeriodHertz(50);
 
   // Clamp hardware outputs to the measured usable window
-  sCold.attach(18, usCOLD_MIN, usCOLD_MAX);
-  sHot.attach(19, usHOT_MIN, usHOT_MAX);
+  sCold.attach(PIN_SERVO_COLD, usCOLD_MIN, usCOLD_MAX);
+  sHot.attach(PIN_SERVO_HOT, usHOT_MIN, usHOT_MAX);
 
   // Start inside the guard band (avoid pressing hard stops)
   const int COLD_MIN_OP = usCOLD_MIN + SERVO_GUARD_US;
