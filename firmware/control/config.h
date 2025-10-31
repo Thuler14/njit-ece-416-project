@@ -35,3 +35,11 @@ const DeviceAddress TEMP_OUT_ADDR = {0x28, 0x59, 0x4D, 0x12, 0x00, 0x00, 0x00, 0
 #define usHOT_MAX 2080   // µs at fully open position
 
 #define SERVO_GUARD_US 15  // Guard offset to avoid hard stops
+
+// ====================================================
+// Flow Sensor (YF-S201)
+// ====================================================
+
+#define FLOW_PIN 21                // Flow sensor signal pin (GPIO 21)
+#define FLOW_K_PULSES_PER_ML 7.5f  // K-factor: pulses per mL of water (placeholder; calibrate later)
+#define FLOW_WINDOW_MS 500         // Sampling window (ms)
