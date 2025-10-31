@@ -7,9 +7,9 @@
 
 #include <OneWire.h>
 
-#define ONE_WIRE_BUS 4
+#include "../../control/config.h"  // Centralized constants
 
-OneWire oneWire(ONE_WIRE_BUS);
+OneWire oneWire(TEMP_PIN_ONEWIRE);
 
 void printAddress(uint8_t* addr) {
   // Hex string

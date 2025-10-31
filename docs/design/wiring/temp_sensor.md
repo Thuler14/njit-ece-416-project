@@ -10,4 +10,4 @@ Three DS18B20 temperature sensors are used to measure the hot, cold, and mixed w
 | Red | VDD | 3V3 |
 | Blue | GND | GND |
 
-> 📷 Photo: `mechanical/photos/m1_temp_sensor_wiring.jpg`
+> 📷 Photo: [`mechanical/photos/m1_temp_sensor_wiring.jpg`](../../../mechanical/photos/m1_temp_sensor_wiring.jpg)

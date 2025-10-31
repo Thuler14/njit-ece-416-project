@@ -10,12 +10,8 @@
 
 #include "../../control/config.h"  // Centralized constants
 
-OneWire oneWire(PIN_TEMP_ONEWIRE);
+OneWire oneWire(TEMP_PIN_ONEWIRE);
 DallasTemperature sensors(&oneWire);
-
-DeviceAddress T_COLD = ADDR_T_COLD;
-DeviceAddress T_HOT = ADDR_T_HOT;
-DeviceAddress T_OUT = ADDR_T_OUT;
 
 float readF(const DeviceAddress addr) {
   float c = sensors.getTempC(addr);
@@ -36,19 +32,19 @@ void setup() {
   Serial.println("\n[ShowerCtrl - DS18B20 Reader]");
 
   sensors.begin();
-  sensors.setResolution(T_HOT, 12);
-  sensors.setResolution(T_COLD, 12);
-  sensors.setResolution(T_OUT, 12);
+  sensors.setResolution(TEMP_HOT_ADDR, 12);
+  sensors.setResolution(TEMP_COLD_ADDR, 12);
+  sensors.setResolution(TEMP_OUT_ADDR, 12);
 
   Serial.println("Detected sensor addresses:");
   Serial.print("HOT  = 0x");
-  printAddr(T_HOT);
+  printAddr(TEMP_HOT_ADDR);
   Serial.println();
   Serial.print("COLD = 0x");
-  printAddr(T_COLD);
+  printAddr(TEMP_COLD_ADDR);
   Serial.println();
   Serial.print("OUT  = 0x");
-  printAddr(T_OUT);
+  printAddr(TEMP_OUT_ADDR);
   Serial.println();
   Serial.println();
 }
@@ -56,9 +52,9 @@ void setup() {
 void loop() {
   sensors.requestTemperatures();
 
-  float Th = readF(T_HOT);
-  float Tc = readF(T_COLD);
-  float To = readF(T_OUT);
+  float Th = readF(TEMP_HOT_ADDR);
+  float Tc = readF(TEMP_COLD_ADDR);
+  float To = readF(TEMP_OUT_ADDR);
 
   if (!isnan(Th) && !isnan(Tc) && !isnan(To)) {
     Serial.printf("T_hot: %.1f °F,  T_cold: %.1f °F,  T_out: %.1f °F\n", Th, Tc, To);
