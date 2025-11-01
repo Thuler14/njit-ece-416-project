@@ -15,46 +15,72 @@
 //   [G] Select Cold  [H] Select Hot
 //   [P] Print saved limits (#define)
 //   [R] Toggle auto sweep
-//   [T] Toggle CSV logging
 
 #include <ESP32Servo.h>
 
-const int PIN_COLD = 18;
-const int PIN_HOT = 19;
+#include "../../control/config.h"  // Centralized configuration
+
+// Attach bounds (keep wide for calibration)
+constexpr int ATTACH_MIN_US = 500;
+constexpr int ATTACH_MAX_US = 2500;
 
 Servo sCold, sHot;
 int ch = 0;  // 0 = Cold, 1 = Hot
-int usCold = 1500, usHot = 1500;
-bool autoSweep = false, csv = false;
+
+// Internal working copies of calibration values.
+#ifdef SERVO_COLD_MIN_US
+int SERVO_COLD_MIN_US_VAL = SERVO_COLD_MIN_US;
+#else
+int SERVO_COLD_MIN_US_VAL = -1;
+#endif
+
+#ifdef SERVO_COLD_MAX_US
+int SERVO_COLD_MAX_US_VAL = SERVO_COLD_MAX_US;
+#else
+int SERVO_COLD_MAX_US_VAL = -1;
+#endif
+
+#ifdef SERVO_HOT_MIN_US
+int SERVO_HOT_MIN_US_VAL = SERVO_HOT_MIN_US;
+#else
+int SERVO_HOT_MIN_US_VAL = -1;
+#endif
+
+#ifdef SERVO_HOT_MAX_US
+int SERVO_HOT_MAX_US_VAL = SERVO_HOT_MAX_US;
+#else
+int SERVO_HOT_MAX_US_VAL = -1;
+#endif
+
+// Current commanded pulse widths (start centered; will recenter if cal present)
+int usCold = 1500;
+int usHot = 1500;
+
+bool autoSweep = false;
 int dirCold = +1, dirHot = -1;
 
-// Marked limits (–1 means not set yet)
-int usCOLD_MIN = -1, usCOLD_MAX = -1, usHOT_MIN = -1, usHOT_MAX = -1;
+// Helpers / State
+bool hasColdCal() { return SERVO_COLD_MIN_US_VAL > 0 && SERVO_COLD_MAX_US_VAL > 0; }
+bool hasHotCal() { return SERVO_HOT_MIN_US_VAL > 0 && SERVO_HOT_MAX_US_VAL > 0; }
+bool fullyCalibrated() { return hasColdCal() && hasHotCal(); }
 
-// Keep a small guard away from hard stops when jumping to MIN/MAX
-const int GUARD_US = 15;
-
-bool hasColdCal() { return usCOLD_MIN > 0 && usCOLD_MAX > 0; }
-bool hasHotCal() { return usHOT_MIN > 0 && usHOT_MAX > 0; }
-
-int clamp(int u) { return constrain(u, 500, 2500); }
+int clamp(int u) { return constrain(u, ATTACH_MIN_US, ATTACH_MAX_US); }
 int currentCold() { return usCold; }
 int currentHot() { return usHot; }
 
-// Calibrated-aware targets for SELECTED channel (ch: 0=Cold, 1=Hot)
 int selMin() {
-  if (ch == 0 && hasColdCal()) return clamp(usCOLD_MIN + GUARD_US);
-  if (ch == 1 && hasHotCal()) return clamp(usHOT_MIN + GUARD_US);
-  return 500;
+  if (ch == 0 && hasColdCal()) return clamp(SERVO_COLD_MIN_US_VAL + SERVO_GUARD_US);
+  if (ch == 1 && hasHotCal()) return clamp(SERVO_HOT_MIN_US_VAL + SERVO_GUARD_US);
+  return ATTACH_MIN_US;
 }
 int selMax() {
-  if (ch == 0 && hasColdCal()) return clamp(usCOLD_MAX - GUARD_US);
-  if (ch == 1 && hasHotCal()) return clamp(usHOT_MAX - GUARD_US);
-  return 2500;
+  if (ch == 0 && hasColdCal()) return clamp(SERVO_COLD_MAX_US_VAL - SERVO_GUARD_US);
+  if (ch == 1 && hasHotCal()) return clamp(SERVO_HOT_MAX_US_VAL - SERVO_GUARD_US);
+  return ATTACH_MAX_US;
 }
 int selMid() {
-  if (ch == 0 && hasColdCal()) return (usCOLD_MIN + usCOLD_MAX) / 2;
-  if (ch == 1 && hasHotCal()) return (usHOT_MIN + usHOT_MAX) / 2;
+  if (ch == 0 && hasColdCal()) return (SERVO_COLD_MIN_US_VAL + SERVO_COLD_MAX_US_VAL) / 2;
+  if (ch == 1 && hasHotCal()) return (SERVO_HOT_MIN_US_VAL + SERVO_HOT_MAX_US_VAL) / 2;
   return 1500;
 }
 
@@ -68,14 +94,35 @@ void setSel(int target) {
   }
 }
 
+void applyInitialMids() {
+  if (hasColdCal()) usCold = clamp((SERVO_COLD_MIN_US_VAL + SERVO_COLD_MAX_US_VAL) / 2);
+  if (hasHotCal()) usHot = clamp((SERVO_HOT_MIN_US_VAL + SERVO_HOT_MAX_US_VAL) / 2);
+}
+
+// Sweep within provided [lo, hi] bounds (inclusive)
+void sweepWithin(int* u, int* dir, int lo, int hi) {
+  const int step = 5;
+  *u += (*dir) * step;
+  if (*u >= hi) {
+    *u = hi;
+    *dir = -1;
+  }
+  if (*u <= lo) {
+    *u = lo;
+    *dir = +1;
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   delay(200);
 
   sCold.setPeriodHertz(50);
   sHot.setPeriodHertz(50);
-  sCold.attach(PIN_COLD, 500, 2500);
-  sHot.attach(PIN_HOT, 500, 2500);
+  sCold.attach(SERVO_PIN_COLD, ATTACH_MIN_US, ATTACH_MAX_US);
+  sHot.attach(SERVO_PIN_HOT, ATTACH_MIN_US, ATTACH_MAX_US);
+
+  applyInitialMids();
   sCold.writeMicroseconds(usCold);
   sHot.writeMicroseconds(usHot);
 
@@ -84,35 +131,51 @@ void setup() {
 
 void banner() {
   Serial.println(F("\n=== ESP32 Servo Calibration ==="));
-  Serial.println(F("Keys: [H] Hot  [G] Cold  |  [R] AutoSweep  [T] CSV  [P] Print"));
+  Serial.println(F("Keys: [H] Hot  [G] Cold  |  [R] AutoSweep  [P] Print"));
   Serial.println(F("      [Z/X]=Cold MIN/MAX  [C/V]=Hot MIN/MAX"));
-  Serial.println(F("      [A]=MIN  [S]=MID  [D]=MAX  (uses calibrated limits if set)"));
+  Serial.println(F("      [A]=MIN  [S]=MID  [D]=MAX  (uses config.h if present)"));
   Serial.println(F("      [Q/W/E] -5/-10/-25   [1/2/3] +5/+10/+25"));
+
+  Serial.printf("Pins: COLD=%d, HOT=%d  |  GUARD=%d us\n",
+                SERVO_PIN_COLD, SERVO_PIN_HOT, SERVO_GUARD_US);
+
+  Serial.printf("Loaded from config.h?  Cold: %s  |  Hot: %s\n",
+                hasColdCal() ? "YES" : "no",
+                hasHotCal() ? "YES" : "no");
+
+  if (hasColdCal()) Serial.printf("Cold limits: %d .. %d\n", SERVO_COLD_MIN_US_VAL, SERVO_COLD_MAX_US_VAL);
+  if (hasHotCal()) Serial.printf("Hot  limits: %d .. %d\n", SERVO_HOT_MIN_US_VAL, SERVO_HOT_MAX_US_VAL);
+
+  Serial.printf("Auto-sweep availability: %s (requires both servos calibrated)\n",
+                fullyCalibrated() ? "READY" : "NOT READY");
+
   printState();
 }
 
 void loop() {
   if (Serial.available()) handleKey(Serial.read());
 
+  // Safety: if calibration becomes invalid (e.g., user resets values), stop auto-sweep
+  if (autoSweep && !fullyCalibrated()) {
+    autoSweep = false;
+    Serial.println("Auto-sweep disabled: both servos must be calibrated.");
+  }
+
   if (autoSweep) {
-    sweep(&usCold, &dirCold);
-    sweep(&usHot, &dirHot);
+    // Compute safe bounds from calibrated limits + guard
+    const int cLo = clamp(SERVO_COLD_MIN_US_VAL + SERVO_GUARD_US);
+    const int cHi = clamp(SERVO_COLD_MAX_US_VAL - SERVO_GUARD_US);
+    const int hLo = clamp(SERVO_HOT_MIN_US_VAL + SERVO_GUARD_US);
+    const int hHi = clamp(SERVO_HOT_MAX_US_VAL - SERVO_GUARD_US);
+
+    sweepWithin(&usCold, &dirCold, cLo, cHi);
+    sweepWithin(&usHot, &dirHot, hLo, hHi);
+
     sCold.writeMicroseconds(usCold);
     sHot.writeMicroseconds(usHot);
-    if (csv) printCSV();
-    delay(20);
-  }
-}
 
-void sweep(int* u, int* dir) {
-  *u += (*dir) * 5;
-  if (*u >= 2100) {
-    *u = 2100;
-    *dir = -1;
-  }
-  if (*u <= 900) {
-    *u = 900;
-    *dir = +1;
+    printCSV();
+    delay(20);
   }
 }
 
@@ -129,7 +192,6 @@ void nudge(int delta) {
 void setAbs(int target) { setSel(target); }
 
 void handleKey(int k) {
-  // Ignore Serial Monitor line endings so each press prints once
   if (k == '\n' || k == '\r') return;
 
   switch (k) {
@@ -145,19 +207,24 @@ void handleKey(int k) {
       Serial.println("Selected: Hot");
       break;
 
-    // Sweep / CSV
+    // Sweep toggle
     case 'r':
     case 'R':
-      autoSweep = !autoSweep;
-      Serial.println(autoSweep ? "Auto ON" : "Auto OFF");
-      break;
-    case 't':
-    case 'T':
-      csv = !csv;
-      Serial.println(csv ? "CSV ON" : "CSV OFF");
+      if (!fullyCalibrated()) {
+        autoSweep = false;
+        Serial.println("Auto-sweep blocked: define limits first (config.h or mark Z/X and C/V).");
+      } else {
+        autoSweep = !autoSweep;
+        if (autoSweep) {
+          Serial.println("Auto ON (CSV logging active)");
+          printCSVHeader();
+        } else {
+          Serial.println("Auto OFF");
+        }
+      }
       break;
 
-    // Position jumps (calibrated-aware)
+    // Position jumps (config-aware)
     case 'a':
     case 'A':
       setSel(selMin());
@@ -194,25 +261,25 @@ void handleKey(int k) {
       nudge(+25);
       break;
 
-    // Mark limits
+    // Mark limits from current position
     case 'z':
     case 'Z':
-      usCOLD_MIN = currentCold();
+      SERVO_COLD_MIN_US_VAL = currentCold();
       Serial.println("Marked Cold MIN");
       break;
     case 'x':
     case 'X':
-      usCOLD_MAX = currentCold();
+      SERVO_COLD_MAX_US_VAL = currentCold();
       Serial.println("Marked Cold MAX");
       break;
     case 'c':
     case 'C':
-      usHOT_MIN = currentHot();
+      SERVO_HOT_MIN_US_VAL = currentHot();
       Serial.println("Marked Hot MIN");
       break;
     case 'v':
     case 'V':
-      usHOT_MAX = currentHot();
+      SERVO_HOT_MAX_US_VAL = currentHot();
       Serial.println("Marked Hot MAX");
       break;
 
@@ -223,24 +290,38 @@ void handleKey(int k) {
       break;
   }
 
-  printState();
+  if (!autoSweep) printState();
 }
 
 void printState() {
-  Serial.printf("COLD=%dus  HOT=%dus  sel=%s  auto=%d  csv=%d\n",
-                usCold, usHot, (ch == 0 ? "Cold" : "Hot"), autoSweep, csv);
+  Serial.printf("COLD=%dus  HOT=%dus  sel=%s  auto=%d\n",
+                usCold, usHot, (ch == 0 ? "Cold" : "Hot"), autoSweep);
+}
+
+void printCSVHeader() {
+  Serial.println("t_ms,usCold,usHot");
 }
 
 void printCSV() {
   static uint32_t t0 = millis();
-  Serial.printf("t_ms=%lu,usCold=%d,usHot=%d\n", (unsigned long) (millis() - t0), usCold, usHot);
+  uint32_t t = millis() - t0;
+  Serial.printf("%lu,%d,%d\n", (unsigned long) t, usCold, usHot);
+}
+
+static void maybePrintDef(const char* name, int v) {
+  if (v > 0) {
+    Serial.print("#define ");
+    Serial.print(name);
+    Serial.print(" ");
+    Serial.println(v);
+  }
 }
 
 void printDefines() {
   Serial.println("\n// Paste into firmware/control/config.h");
-  if (usCOLD_MIN > 0) Serial.printf("#define usCOLD_MIN %d\n", usCOLD_MIN);
-  if (usCOLD_MAX > 0) Serial.printf("#define usCOLD_MAX %d\n", usCOLD_MAX);
-  if (usHOT_MIN > 0) Serial.printf("#define usHOT_MIN  %d\n", usHOT_MIN);
-  if (usHOT_MAX > 0) Serial.printf("#define usHOT_MAX  %d\n", usHOT_MAX);
+  maybePrintDef("SERVO_COLD_MIN_US", SERVO_COLD_MIN_US_VAL);
+  maybePrintDef("SERVO_COLD_MAX_US", SERVO_COLD_MAX_US_VAL);
+  maybePrintDef("SERVO_HOT_MIN_US", SERVO_HOT_MIN_US_VAL);
+  maybePrintDef("SERVO_HOT_MAX_US", SERVO_HOT_MAX_US_VAL);
   Serial.println();
 }
