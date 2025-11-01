@@ -19,21 +19,21 @@ void setup() {
   sHot.setPeriodHertz(50);
 
   // Clamp hardware outputs to the measured usable window
-  sCold.attach(PIN_SERVO_COLD, usCOLD_MIN, usCOLD_MAX);
-  sHot.attach(PIN_SERVO_HOT, usHOT_MIN, usHOT_MAX);
+  sCold.attach(SERVO_PIN_COLD, SERVO_COLD_MIN_US, SERVO_COLD_MAX_US);
+  sHot.attach(SERVO_PIN_HOT, SERVO_HOT_MIN_US, SERVO_HOT_MAX_US);
 
   // Start inside the guard band (avoid pressing hard stops)
-  const int COLD_MIN_OP = usCOLD_MIN + SERVO_GUARD_US;
-  const int HOT_MIN_OP = usHOT_MIN + SERVO_GUARD_US;
+  const int COLD_MIN_OP = SERVO_COLD_MIN_US + SERVO_GUARD_US;
+  const int HOT_MIN_OP = SERVO_HOT_MIN_US + SERVO_GUARD_US;
   sCold.writeMicroseconds(COLD_MIN_OP);
   sHot.writeMicroseconds(HOT_MIN_OP);
 }
 
 void loop() {
   // Sweep both servos within calibrated + guard range
-  for (int pos = usCOLD_MIN + SERVO_GUARD_US; pos <= usCOLD_MAX - SERVO_GUARD_US; pos += 5) {
-    int posHot = map(pos, usCOLD_MIN, usCOLD_MAX,
-                     usHOT_MIN + SERVO_GUARD_US, usHOT_MAX - SERVO_GUARD_US);
+  for (int pos = SERVO_COLD_MIN_US + SERVO_GUARD_US; pos <= SERVO_COLD_MAX_US - SERVO_GUARD_US; pos += 5) {
+    int posHot = map(pos, SERVO_COLD_MIN_US, SERVO_COLD_MAX_US,
+                     SERVO_HOT_MIN_US + SERVO_GUARD_US, SERVO_HOT_MAX_US - SERVO_GUARD_US);
 
     sCold.writeMicroseconds(pos);
     sHot.writeMicroseconds(posHot);
@@ -41,9 +41,9 @@ void loop() {
     delay(15);  // smooth motion (~0.75s per sweep)
   }
 
-  for (int pos = usCOLD_MAX - SERVO_GUARD_US; pos >= usCOLD_MIN + SERVO_GUARD_US; pos -= 5) {
-    int posHot = map(pos, usCOLD_MIN, usCOLD_MAX,
-                     usHOT_MIN + SERVO_GUARD_US, usHOT_MAX - SERVO_GUARD_US);
+  for (int pos = SERVO_COLD_MAX_US - SERVO_GUARD_US; pos >= SERVO_COLD_MIN_US + SERVO_GUARD_US; pos -= 5) {
+    int posHot = map(pos, SERVO_COLD_MIN_US, SERVO_COLD_MAX_US,
+                     SERVO_HOT_MIN_US + SERVO_GUARD_US, SERVO_HOT_MAX_US - SERVO_GUARD_US);
 
     sCold.writeMicroseconds(pos);
     sHot.writeMicroseconds(posHot);
