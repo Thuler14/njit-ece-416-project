@@ -10,7 +10,7 @@
 
 ## Hardware Constants
 
-| Constant | Description | Typical Value |
+| Constant | Description | Value |
 |:--|:--|:--:|
 | `FLOW_PIN` | GPIO used for pulse input | `21` |
 
@@ -18,7 +18,7 @@
 
 ## Measurement Constants
 
-| Constant | Description | Typical Value |
+| Constant | Description | Value |
 |:--|:--|:--:|
 | `FLOW_K_PULSES_PER_ML` | K-factor — pulses per mL of water (≈7500/L) | `7.5f` |
 | `FLOW_WINDOW_MS` | Sampling window for pulse counting (ms) | `500` |

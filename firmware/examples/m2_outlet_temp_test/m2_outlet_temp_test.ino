@@ -10,7 +10,15 @@
 #include <OneWire.h>
 #include <math.h>
 
-#include "../../control/config.h"  // Centralized configuration
+#define TEMP_PIN_ONEWIRE 4
+#define TEMP_RESOLUTION 9
+#define TEMP_CONVERSION_TIME_MS 94
+#define TEMP_LOOP_DT_MS 100
+#define TEMP_MIN_VALID_C -60.0f
+#define TEMP_MAX_VALID_C 125.0f
+#define TEMP_EMA_ALPHA 0.20f
+
+const DeviceAddress TEMP_OUT_ADDR = {0x28, 0x59, 0x4D, 0x12, 0x00, 0x00, 0x00, 0x9C};
 
 OneWire oneWire(TEMP_PIN_ONEWIRE);
 DallasTemperature sensors(&oneWire);

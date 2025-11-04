@@ -5,6 +5,8 @@
 // Board: ESP32 (Control + UI Module)
 // ====================================================
 
+#include <Arduino.h>
+
 #define LED_PIN 2  // Onboard LED pin
 
 void setup() {
