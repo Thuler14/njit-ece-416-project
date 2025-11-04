@@ -6,7 +6,9 @@
 // Bus: GPIO 21 with 10kΩ pull-up to 3V3 (RISING-edge interrupt)
 // ====================================================
 
-#include "../../control/config.h"  // Centralized configuration
+#define FLOW_PIN 21
+#define FLOW_K_PULSES_PER_ML 7.5f
+#define FLOW_WINDOW_MS 500
 
 volatile uint32_t g_pulseCount = 0;
 static uint32_t t0_ms = 0;      // Start time for relative timestamps
@@ -51,7 +53,7 @@ void loop() {
   }
 
   const float Hz = (1000.0f * delta) / (float) FLOW_WINDOW_MS;
-  const float L_per_min = (Hz * 60.0f) / (FLOW_K_PULSES_PER_ML* 1000.0f);
+  const float L_per_min = (Hz * 60.0f) / (FLOW_K_PULSES_PER_ML * 1000.0f);
   const uint32_t t_ms = now - t0_ms;
 
   Serial.print(t_ms);

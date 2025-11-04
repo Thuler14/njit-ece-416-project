@@ -8,7 +8,11 @@
 #include <DallasTemperature.h>
 #include <OneWire.h>
 
-#include "../../control/config.h"  // Centralized constants
+#define TEMP_PIN_ONEWIRE 4
+
+const DeviceAddress TEMP_HOT_ADDR = {0x28, 0x8D, 0xAC, 0x12, 0x00, 0x00, 0x00, 0x93};
+const DeviceAddress TEMP_COLD_ADDR = {0x28, 0x2C, 0x4F, 0x12, 0x00, 0x00, 0x00, 0x6C};
+const DeviceAddress TEMP_OUT_ADDR = {0x28, 0x59, 0x4D, 0x12, 0x00, 0x00, 0x00, 0x9C};
 
 OneWire oneWire(TEMP_PIN_ONEWIRE);
 DallasTemperature sensors(&oneWire);

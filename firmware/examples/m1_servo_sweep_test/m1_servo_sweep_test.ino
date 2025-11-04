@@ -9,7 +9,14 @@
 
 #include <ESP32Servo.h>
 
-#include "../../control/config.h"
+#define SERVO_PIN_HOT 19
+#define SERVO_PIN_COLD 18
+
+#define SERVO_HOT_MIN_US 1180
+#define SERVO_HOT_MAX_US 2080
+#define SERVO_COLD_MIN_US 1120
+#define SERVO_COLD_MAX_US 2080
+#define SERVO_GUARD_US 15
 
 Servo sCold, sHot;
 

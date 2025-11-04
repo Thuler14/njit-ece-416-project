@@ -1,6 +1,6 @@
 # OLED Display (SSD1309 SPI Blue) — Wiring
 
-The OLED display (SSD1309) uses a 4-wire SPI connection handled by the **U8g2** library on the ESP32’s VSPI bus.
+The **128×64 px SSD1309** OLED connects via a ESP32’s **VSPI bus** using a **4-wire SPI interface** compatible with **U8g2**.
 
 - **Bus type:** VSPI (SPI 4-wire + CS)
 

@@ -9,7 +9,7 @@
 
 ## Hardware Constants 
 
-| Constant | Description | Typical Value |
+| Constant | Description | Value |
 |:--|:--|:--:|
 | `TEMP_PIN_ONEWIRE` | GPIO pin for DS18B20 data line | `4` |
 | `TEMP_HOT_ADDR` | Hot inlet sensor | `0x288DAC1200000093` |
@@ -22,7 +22,7 @@
 
 ## Timing Constants
 
-| Constant | Description | Typical Value |
+| Constant | Description | Value |
 |:--|:--|:--:|
 | `TEMP_RESOLUTION` | DS18B20 resolution (9–12 bits) | `9` |
 | `TEMP_CONVERSION_TIME_MS` | Max conversion time for chosen resolution | `94` |
@@ -32,7 +32,7 @@
 
 ## Filtering Constants
 
-| Constant | Description | Typical Value |
+| Constant | Description | Value |
 |:--|:--|:--:|
 | `TEMP_EMA_ALPHA` | EMA smoothing factor (τ ≈ 0.4 s @ 10 Hz) | `0.20f` |
 | `TEMP_MIN_VALID_C` | Minimum valid temperature (°C) | `-60.0f` |

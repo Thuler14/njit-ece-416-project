@@ -10,7 +10,7 @@
 
 ## Hardware Constants
 
-| Constant | Description | Typical Value |
+| Constant | Description | Value |
 |:--|:--|:--:|
 | `SERVO_PIN_HOT` | GPIO pin for hot valve servo | `19` |
 | `SERVO_PIN_COLD` | GPIO pin for cold valve servo | `18` |

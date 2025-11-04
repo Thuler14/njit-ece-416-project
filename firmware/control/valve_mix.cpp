@@ -8,13 +8,18 @@
 static Servo sHot, sCold;
 static bool sAttached = false;
 
+// Soft limits (guard band applied around mechanical min/max)
 static int hotSoftMin, hotSoftMax;
 static int coldSoftMin, coldSoftMax;
 
+// Last commanded pulse widths (for logging/tests)
 static int g_lastHot = (SERVO_HOT_MIN_US + SERVO_HOT_MAX_US) / 2;
 static int g_lastCold = (SERVO_COLD_MIN_US + SERVO_COLD_MAX_US) / 2;
 
-static inline int lerp_us(int a, int b, float t) { return (int) lroundf(a + (b - a) * t); }
+// Linear interpolation between two pulse widths
+static inline int lerp_us(int a, int b, float t) {
+  return (int) lroundf(a + (b - a) * t);
+}
 
 void valveMixBegin() {
   const int hMin = min(SERVO_HOT_MIN_US, SERVO_HOT_MAX_US);
@@ -48,6 +53,7 @@ void valveMixCloseAll() {
 
 void applyMixRatio(float ratio) {
   if (!sAttached) return;
+
   const float r = constrain(ratio, 0.0f, 1.0f);
 
   // HOT: r=0 → MAX (closed), r=1 → MIN (open)

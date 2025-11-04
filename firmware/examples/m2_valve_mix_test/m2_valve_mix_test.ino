@@ -7,7 +7,6 @@
 // Actuators: MG996R Servos for Hot and Cold Valves
 // ====================================================
 
-#include "../../control/config.h"
 #include "../../control/valve_mix.cpp"
 #include "../../control/valve_mix.h"
 

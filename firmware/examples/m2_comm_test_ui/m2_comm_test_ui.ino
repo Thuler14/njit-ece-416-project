@@ -2,7 +2,7 @@
 // M2: ESP-NOW Communication Test — UI
 // Purpose: Send packets (setpoint/flags) to Control and verify ACK over a single-peer ESP-NOW link
 // Board: ESP32 (UI Module), STA mode only
-// Channel: 6  |  Encryption: Optional (set COMM_USE_ENCRYPTION = 1)
+// Channel: 6  |  Encryption: Optional (set COMM_USE_ENCRYPTION = true)
 // Peer MAC: COMM_CTRL_MAC
 // ====================================================
 
@@ -11,14 +11,19 @@
 #include <esp_wifi.h>
 #include <esp_wifi_types.h>
 
-#include "../../config/config.h"  // Centralized configuration
+#define COMM_CHANNEL 6
+#define COMM_USE_ENCRYPTION 0
+
+const uint8_t COMM_CTRL_MAC[6]{0x3C, 0x8A, 0x1F, 0x80, 0xA9, 0xD4};
+const uint8_t COMM_PMK[16]{'s', 'h', 'o', 'w', 'e', 'r', 'c', 't', 'r', 'l', '_', 'p', 'm', 'k', '1', '6'};
+const uint8_t COMM_LMK[16]{'s', 't', 'a', 't', 'i', 'c', '_', 'l', 'm', 'k', '_', 'u', 'i', 'c', 't', 'r'};
 
 typedef struct __attribute__((packed)) {
   uint32_t ms;
   uint16_t seq;
   float setpointF;
   uint8_t flags;  // bit0 = ACK
-} Payload;
+} COMM_Payload;
 
 static uint16_t seq = 0;
 unsigned long tLast = 0;
@@ -32,7 +37,9 @@ String macStr(const uint8_t* m) {
 void onSend(const wifi_tx_info_t* info, esp_now_send_status_t status) {
   const uint8_t* mac = info ? info->des_addr : nullptr;
   char m[18];
+
   if (mac) snprintf(m, sizeof(m), "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
   Serial.printf("UI SEND -> %s status=%s\n",
                 mac ? m : "(null)",
                 status == ESP_NOW_SEND_SUCCESS ? "OK" : "FAIL");
@@ -40,7 +47,8 @@ void onSend(const wifi_tx_info_t* info, esp_now_send_status_t status) {
 
 void onRecv(const esp_now_recv_info_t* info, const uint8_t* data, int data_len) {
   const uint8_t* mac = info ? info->src_addr : nullptr;  // sender MAC
-  if (!mac) return;                                      // safety
+
+  if (!mac) return;  // safety
 
   // accept only Control
   if (memcmp(mac, COMM_CTRL_MAC, 6) != 0) {
@@ -50,26 +58,32 @@ void onRecv(const esp_now_recv_info_t* info, const uint8_t* data, int data_len) 
     return;
   }
 
-  if (data_len != sizeof(Payload)) {  // size check
+  if (data_len != sizeof(COMM_Payload)) {  // size check
     Serial.printf("IGNORED bad len=%d\n", data_len);
     return;
   }
 
-  Payload rx;
-  memcpy(&rx, data, sizeof(rx));
+  COMM_Payload rx;
   char m[18];
+
+  memcpy(&rx, data, sizeof(rx));
   snprintf(m, sizeof(m), "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
   Serial.printf("UI RECV <- %s seq=%u ack=%u setpoint=%.2f ms=%lu\n",
                 m, rx.seq, (rx.flags & 1), rx.setpointF, (unsigned long) rx.ms);
 }
 
 bool addPeer(const uint8_t* peer) {
   esp_now_peer_info_t p = {};
+
   memcpy(p.peer_addr, peer, 6);
+
   p.channel = COMM_CHANNEL;  // fixed channel
   p.ifidx = WIFI_IF_STA;
-  p.encrypt = COMM_USE_ENCRYPTION;
+  p.encrypt = COMM_USE_ENCRYPTION ? 1 : 0;
+
   if (p.encrypt) memcpy(p.lmk, COMM_LMK, 16);
+
   return esp_now_add_peer(&p) == ESP_OK;
 }
 
@@ -94,7 +108,9 @@ void setup() {
     Serial.println("esp_now_init FAILED");
     while (1) delay(1000);
   }
+
   if (COMM_USE_ENCRYPTION) esp_now_set_pmk(COMM_PMK);
+
   if (!addPeer(COMM_CTRL_MAC)) {
     Serial.println("add_peer FAILED");
     while (1) delay(1000);
@@ -110,7 +126,8 @@ void loop() {
   unsigned long now = millis();
   if (now - tLast >= 1000) {  // 1 Hz heartbeat
     tLast = now;
-    Payload tx;
+
+    COMM_Payload tx;
     tx.ms = now;
     tx.seq = ++seq;
     tx.setpointF = 102.0f;  // placeholder value
