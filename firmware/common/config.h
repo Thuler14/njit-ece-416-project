@@ -34,3 +34,15 @@ typedef struct __attribute__((packed)) {
   float setpointF;  // temperature setpoint
   uint8_t flags;    // status bits (COMM_FLAG_*)
 } COMM_Payload;
+
+// ====================================================
+// Setpoint configurations
+// ====================================================
+
+constexpr float SETPOINT_DEFAULT_F = 100.0f;  // Default setpoint
+constexpr float SETPOINT_MIN_F = 80.0f;       // Safety lower limit
+constexpr float SETPOINT_MAX_F = 120.0f;      // Safety upper limit
+constexpr float SETPOINT_STEP_F = 1.0f;       // Increment/decrement step
+
+constexpr float SETPOINT_PRESET_A_F = 98.0f;   // Preset A
+constexpr float SETPOINT_PRESET_B_F = 105.0f;  // Preset B
