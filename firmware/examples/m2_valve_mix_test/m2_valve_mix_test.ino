@@ -18,7 +18,7 @@ void setup() {
   delay(200);
 
   Serial.println("t_ms,ratio,cold_us,hot_us");
-  valveMixBegin();
+  valveMixInit();
   delay(500);
 
   const unsigned hold_ms = 3000;  // ~15 s total for all 5 steps

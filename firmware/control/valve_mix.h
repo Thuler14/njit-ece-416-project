@@ -9,7 +9,7 @@
  *    - ESP32Servo library
  *
  *  Interface:
- *    void valveMixBegin();
+ *    void valveMixInit();
  *    void applyMixRatio(float ratio);
  *    void valveMixCloseAll();
  *    int  lastColdUs();
@@ -19,10 +19,8 @@
 
 #pragma once
 
-#include <Arduino.h>
-
 // Initialize and attach servos using pins & calibration from config.h
-void valveMixBegin();
+void valveMixInit();
 
 // Close both valves (safe state)
 void valveMixCloseAll();
