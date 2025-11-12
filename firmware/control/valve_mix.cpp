@@ -21,7 +21,7 @@ static inline int lerp_us(int a, int b, float t) {
   return (int) lroundf(a + (b - a) * t);
 }
 
-void valveMixBegin() {
+void valveMixInit() {
   const int hMin = min(SERVO_HOT_MIN_US, SERVO_HOT_MAX_US);
   const int hMax = max(SERVO_HOT_MIN_US, SERVO_HOT_MAX_US);
   const int cMin = min(SERVO_COLD_MIN_US, SERVO_COLD_MAX_US);

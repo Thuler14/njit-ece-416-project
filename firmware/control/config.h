@@ -1,6 +1,8 @@
 #pragma once
-#include <DallasTemperature.h>
+
 #include <stdint.h>
+
+using DeviceAddress = uint8_t[8];
 
 // ====================================================
 // Temperature Sensors (DS18B20)

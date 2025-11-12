@@ -22,6 +22,7 @@
 #include "../common/config.h"
 #include "communication.h"
 #include "config.h"
+#include "valve_mix.h"
 
 static float setpointF = SETPOINT_DEFAULT_F;  // current setpoint
 static bool runFlag = false;                  // true=ON, false=OFF
@@ -34,6 +35,7 @@ void setup() {
     while (1) delay(1000);
 
   // Additional hardware init (sensors, servos) goes here
+  valveMixInit();
 }
 
 void loop() {
