@@ -1,28 +1,31 @@
 /*
  * ================================================================
  *  Module: buttons
- *  Purpose: Handles user input for the UI unit.
- *           Provides debounced button reads and press detection.
+ *  Purpose: Handles user input for the UI unit with a custom
+ *           debouncer and event generator.
+ *           Provides debounced detection of clicks, double-clicks,
+ *           long presses, and repeat presses.
  *
  *  Hardware:
- *    - 5 active-low pushbuttons (▲ ▼ ● A B)
+ *    - 5 active-low pushbuttons: ▲, ▼, ●, A, B
  *
  *  Dependencies:
- *    - config.h  (GPIO pin assignments)
- *    - Arduino core (digitalRead, pinMode)
+ *    - config.h        (GPIO pin definitions, timing constants)
+ *    - Arduino core    (pinMode, digitalRead, millis)
  *
  *  Interface:
  *    void buttonsInit();
- *    bool buttonIsDown(BtnIndex idx);
- *    bool buttonPressed(BtnIndex idx);
+ *    bool buttonsPoll(ButtonsEvents& out);
  *
  *  Data Structures:
- *    enum BtnIndex { BTN_UP, BTN_DOWN, BTN_OK, BTN_A, BTN_B, BTN_COUNT };
- *    struct Btn {
- *      const char* label;   // "▲", "▼", "●", "A", "B"
- *      uint8_t pin;         // GPIO number
- *      bool lastStable;     // last debounced state
- *      unsigned long t;     // last debounce timestamp (ms)
+ *    enum ButtonId { BUTTON_UP, BUTTON_DOWN, BUTTON_OK, BUTTON_A, BUTTON_B, BUTTON_COUNT };
+ *    struct ButtonsEvents {
+ *      bool upClick,   upDblClick,   upLong,   upRepeat;
+ *      bool downClick, downDblClick, downLong, downRepeat;
+ *      bool okClick,   okDblClick,   okLong,   okRepeat;
+ *      bool aClick,    aDblClick,    aLong,    aRepeat;
+ *      bool bClick,    bDblClick,    bLong,    bRepeat;
+ *      bool chordStepLong;
  *    };
  * ================================================================
  */
@@ -33,32 +36,53 @@
 
 #include "config.h"
 
-// Button indices for BTN_LIST[]
-enum BtnIndex : uint8_t {
-  BTN_UP = 0,
-  BTN_DOWN,
-  BTN_OK,
-  BTN_A,
-  BTN_B,
-  BTN_COUNT
+// Logical button IDs
+enum ButtonId : uint8_t {
+  BUTTON_UP = 0,
+  BUTTON_DOWN,
+  BUTTON_OK,
+  BUTTON_A,
+  BUTTON_B,
+  BUTTON_COUNT
 };
 
-// Button metadata and debounce state
-struct Btn {
-  const char* label;  // "▲", "▼", "●", "A", "B"
-  uint8_t pin;        // GPIO
-  bool lastStable;    // last debounced state
-  unsigned long t;    // last debounce timestamp
+// One-shot event bundle returned by buttonsPoll()
+struct ButtonsEvents {
+  // UP/DOWN
+  bool upClick = false;
+  bool upDblClick = false;
+  bool upLong = false;
+  bool upRepeat = false;
+
+  bool downClick = false;
+  bool downDblClick = false;
+  bool downLong = false;
+  bool downRepeat = false;
+
+  // OK
+  bool okClick = false;
+  bool okDblClick = false;
+  bool okLong = false;
+  bool okRepeat = false;
+
+  // Presets
+  bool aClick = false;
+  bool aDblClick = false;
+  bool aLong = false;
+  bool aRepeat = false;
+
+  bool bClick = false;
+  bool bDblClick = false;
+  bool bLong = false;
+  bool bRepeat = false;
+
+  // Chords
+  bool chordStepLong = false;
 };
 
-// Global list of button descriptors (defined in buttons.cpp)
-extern Btn BTN_LIST[BTN_COUNT];
-
-// Initialize button GPIOs and debounce state
+// Initializes all buttons (active-low with pull-ups)
 void buttonsInit();
 
-// Return true while the button is physically pressed (active-low)
-bool buttonIsDown(BtnIndex idx);
-
-// Return true once per press after debounce
-bool buttonPressed(BtnIndex idx);
+// Polls all buttons; fills 'out' with events, clears latches,
+// and returns true if any event occurred this cycle.
+bool buttonsPoll(ButtonsEvents& out);

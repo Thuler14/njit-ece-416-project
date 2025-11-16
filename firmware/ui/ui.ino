@@ -22,6 +22,7 @@
 #include "display.h"
 
 static float setpointF = SETPOINT_DEFAULT_F;  // current setpoint
+static float stepF = SETPOINT_STEP_F;         // current setpoint step
 static bool runFlag = false;                  // true=ON, false=OFF
 
 // Map UI + comm status into DisplayState and draw on OLED
@@ -52,24 +53,29 @@ void setup() {
 }
 
 void loop() {
-  const bool up = buttonPressed(BTN_UP);
-  const bool down = buttonPressed(BTN_DOWN);
-  const bool ok = buttonPressed(BTN_OK);
-  const bool a = buttonPressed(BTN_A);
-  const bool b = buttonPressed(BTN_B);
-
-  float newSetpointF = setpointF;
+  ButtonsEvents ev{};
+  const bool anyBtn = buttonsPoll(ev);  // returns true if any event latched
   bool updated = false;
 
-  if (up) newSetpointF += SETPOINT_STEP_F, updated = true;
-  if (down) newSetpointF -= SETPOINT_STEP_F, updated = true;
-  if (ok) runFlag = !runFlag, updated = true;
-  if (a) newSetpointF = SETPOINT_PRESET_A_F, updated = true;
-  if (b) newSetpointF = SETPOINT_PRESET_B_F, updated = true;
+  if (ev.chordStepLong) {
+    if (stepF <= 0.5f)
+      stepF = 1.0f;
+    else if (stepF < 1.5f)
+      stepF = 2.0f;
+    else
+      stepF = 0.5f;
+    return;  // consume
+  }
+
+  if (ev.upClick || ev.upRepeat) setpointF += stepF, updated = true;
+  if (ev.downClick || ev.downRepeat) setpointF -= stepF, updated = true;
+  if (ev.aLong) setpointF = SETPOINT_PRESET_A_F, updated = true;
+  if (ev.bLong) setpointF = SETPOINT_PRESET_B_F, updated = true;
+  if (ev.okLong) runFlag = !runFlag, updated = true;
 
   // Send new state (marks TX as pending in communication layer)
   if (updated) {
-    setpointF = constrain(newSetpointF, SETPOINT_MIN_F, SETPOINT_MAX_F);
+    setpointF = constrain(setpointF, SETPOINT_MIN_F, SETPOINT_MAX_F);
     commSendSetpoint(setpointF, runFlag);
   }
 

@@ -21,5 +21,9 @@ constexpr uint8_t BTN_PIN_OK = 27;    // OK button (GPIO 27)
 constexpr uint8_t BTN_PIN_A = 14;     // A button (GPIO 14)
 constexpr uint8_t BTN_PIN_B = 13;     // B button (GPIO 13)
 
-// --- Debounce Configuration ---
-constexpr unsigned long BTN_DEBOUNCE_MS = 20;
+// --- Debounce & Gesture Timing (ms) ---
+constexpr unsigned long BTN_DEBOUNCE_MS = 25;       // debounce filter time
+constexpr unsigned long BTN_DBLCLICK_MS = 350;      // maximum gap between clicks for double-click
+constexpr unsigned long BTN_LONGPRESS_MS = 800;     // time held to trigger a long press
+constexpr unsigned long BTN_REPEAT_DELAY_MS = 500;  // delay before the first repeat event
+constexpr unsigned long BTN_REPEAT_MS = 150;        // interval between subsequent repeats

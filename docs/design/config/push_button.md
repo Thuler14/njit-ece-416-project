@@ -22,9 +22,13 @@
 
 ## Timing Constant
 
-| Constant | Description | Value |
+| Constant | Description | Value (ms) |
 |:--|:--|:--:|
-| `BTN_DEBOUNCE_MS` | Debounce delay in milliseconds | `20` |
+| `BTN_DEBOUNCE_MS` | Time a level must be stable before recognized | `20` |
+| `BTN_DBLCLICK_MS` | Maximum time between two clicks | `350` |
+| `BTN_LONGPRESS_MS` | Hold duration to count as long-press | `800` |
+| `BTN_REPEAT_DELAY_MS` | Wait before first repeat event | `500` |
+| `BTN_REPEAT_MS` | Interval between repeats | `150` |
 
 ---
 
