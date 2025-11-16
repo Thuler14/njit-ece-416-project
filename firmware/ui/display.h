@@ -35,6 +35,7 @@
 // Structure representing what will be shown on the OLED
 struct DisplayState {
   float setpointF;
+  float stepF;
   bool runFlag;
   uint32_t txDoneCount;
   bool lastResultOk;
