@@ -22,10 +22,25 @@
 #include "../common/config.h"
 #include "communication.h"
 #include "config.h"
+#include "pid.h"
+#include "temperature.h"
 #include "valve_mix.h"
 
-static float setpointF = SETPOINT_DEFAULT_F;  // current setpoint
-static bool runFlag = false;                  // true=ON, false=OFF
+static constexpr float LOOP_DT_SEC = 0.012f;
+static constexpr uint16_t LOOP_DELAY_MS = 12;
+static PID pi(0.10f, 0.08f, 0.0f, 1.0f);
+
+static float setpointF = SETPOINT_DEFAULT_F;
+static bool runFlag = false;
+static bool outletFaultActive = false;
+
+static void enterSafeState(const char* reason) {
+  if (reason != nullptr) {
+    Serial.println(reason);
+  }
+  valveMixCloseAll();
+  pi.reset();
+}
 
 void setup() {
   Serial.begin(115200);
@@ -34,11 +49,17 @@ void setup() {
   if (!commInit())
     while (1) delay(1000);
 
-  // Additional hardware init (sensors, servos) goes here
+  if (!temperatureInit()) {
+    Serial.println("TEMP ERROR: No DS18B20 sensors detected");
+  }
+
   valveMixInit();
+  valveMixCloseAll();
 }
 
 void loop() {
+  (void) temperatureService();
+
   CommCommand cmd{};
   if (commPollCommand(cmd)) {
     if (cmd.lastOk) {
@@ -54,5 +75,39 @@ void loop() {
     }
   }
 
-  delay(12);  // small delay to avoid busy loop
+  if (!runFlag) {
+    outletFaultActive = false;
+    enterSafeState(nullptr);
+    delay(LOOP_DELAY_MS);
+    return;
+  }
+
+  const TemperatureReading& outlet = temperatureGetReading(TempSensor::OUTLET);
+  if (!outlet.present || !outlet.valid) {
+    if (!outletFaultActive) {
+      const char* msg = !outlet.present
+                            ? "TEMP ERROR: Outlet sensor missing → closing valves"
+                            : "TEMP ERROR: Invalid outlet reading → closing valves";
+      enterSafeState(msg);
+    } else {
+      enterSafeState(nullptr);
+    }
+    outletFaultActive = true;
+    delay(LOOP_DELAY_MS);
+    return;
+  }
+  if (outletFaultActive) {
+    Serial.println("TEMP INFO: Outlet sensor recovered");
+    outletFaultActive = false;
+  }
+
+  const float outletTempF = outlet.filteredF;
+  const float errorF = setpointF - outletTempF;
+  const float ratio = pi.update(errorF, LOOP_DT_SEC);
+  applyMixRatio(ratio);
+
+  Serial.printf("OUT=%.2fF / SET=%.2fF | error=%.2fF | ratio=%.2f\n",
+                outletTempF, setpointF, errorF, ratio);
+
+  delay(LOOP_DELAY_MS);
 }
