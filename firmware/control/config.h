@@ -45,3 +45,14 @@ constexpr unsigned SERVO_GUARD_US = 15;       // Guard offset to avoid hard stop
 constexpr uint8_t FLOW_PIN = 21;              // Flow sensor signal pin (GPIO 21)
 constexpr float FLOW_K_PULSES_PER_ML = 7.5f;  // K-factor: pulses per mL of water (placeholder; calibrate later)
 constexpr unsigned FLOW_WINDOW_MS = 500;      // Sampling window (ms)
+
+// ====================================================
+// PID Controller (Outlet Temperature)
+// ====================================================
+
+constexpr float PID_KP = 0.10f;          // Proportional gain
+constexpr float PID_KI = 0.08f;          // Integral gain (per second)
+constexpr float PID_KD = 0.0f;           // Derivative gain
+constexpr float PID_OUT_MIN = 0.0f;      // Output lower bound (mix ratio)
+constexpr float PID_OUT_MAX = 1.0f;      // Output upper bound (mix ratio)
+constexpr bool PID_LOG_CSV = false;      // Enable CSV logging (time_ms,out_f,set_f,error_f,ratio)
