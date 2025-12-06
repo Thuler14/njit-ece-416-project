@@ -16,6 +16,10 @@ constexpr float TEMP_MIN_VALID_C = -60.0f;        // Minimum valid temperature (
 constexpr float TEMP_MAX_VALID_C = 125.0f;        // Maximum valid temperature (°C)
 constexpr float TEMP_EMA_ALPHA = 0.20f;           // EMA filter (τ ≈ 0.4 s @10 Hz)
 
+// Plausibility window for outlet control logic (°F)
+constexpr float OUTLET_MIN_PLAUSIBLE_F = 32.0f;
+constexpr float OUTLET_MAX_PLAUSIBLE_F = 140.0f;
+
 // --- Sensor ROM Addresses ---
 // Scanned using: firmware/tools/m1_temp_scan/m1_temp_scan.ino
 const DeviceAddress TEMP_HOT_ADDR = {0x28, 0x8D, 0xAC, 0x12, 0x00, 0x00, 0x00, 0x93};   // Hot line
@@ -56,3 +60,9 @@ constexpr float PID_KD = 0.0f;           // Derivative gain
 constexpr float PID_OUT_MIN = 0.0f;      // Output lower bound (mix ratio)
 constexpr float PID_OUT_MAX = 1.0f;      // Output upper bound (mix ratio)
 constexpr bool PID_LOG_CSV = false;      // Enable CSV logging (time_ms,out_f,set_f,error_f,ratio)
+
+// ====================================================
+// Safety / Communication
+// ====================================================
+
+constexpr unsigned COMM_LINK_TIMEOUT_MS = 2000;  // Link-loss timeout (ms)

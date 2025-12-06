@@ -27,3 +27,9 @@ constexpr unsigned long BTN_DBLCLICK_MS = 350;      // maximum gap between click
 constexpr unsigned long BTN_LONGPRESS_MS = 800;     // time held to trigger a long press
 constexpr unsigned long BTN_REPEAT_DELAY_MS = 500;  // delay before the first repeat event
 constexpr unsigned long BTN_REPEAT_MS = 150;        // interval between subsequent repeats
+
+// ====================================================
+// Communication heartbeat
+// ====================================================
+
+constexpr unsigned long UI_HEARTBEAT_MS = 1000;  // UI -> Control heartbeat interval
