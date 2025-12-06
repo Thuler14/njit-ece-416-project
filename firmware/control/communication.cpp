@@ -10,6 +10,7 @@
 // RX sequence tracking
 static CommCommand s_lastCmd{};  // last command sent
 static bool s_newCmd = false;    // true = new command available
+static unsigned long s_lastRxMs = 0;  // millis() when last valid packet arrived
 
 // Protects s_lastCmd and s_newCmd
 static portMUX_TYPE s_cmdMux = portMUX_INITIALIZER_UNLOCKED;
@@ -22,6 +23,7 @@ static void on_rx(const uint8_t src_mac[6], const uint8_t* data, size_t len, voi
   cmd.lastOk = false;
 
   if (len == sizeof(COMM_Payload)) {
+    s_lastRxMs = millis();
     // Valid packet: extract data and prepare ACK
     COMM_Payload p;
     memcpy(&p, data, sizeof(p));
@@ -81,4 +83,12 @@ bool commPollCommand(CommCommand& outCmd) {
   outCmd = s_lastCmd;
   portEXIT_CRITICAL(&s_cmdMux);
   return true;
+}
+
+unsigned long commLastRxMs() {
+  return s_lastRxMs;
+}
+
+void commMarkLinkLost() {
+  s_lastRxMs = 0;
 }

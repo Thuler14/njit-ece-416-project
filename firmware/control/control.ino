@@ -19,6 +19,8 @@
  * ================================================================
  */
 
+#include <stdio.h>
+
 #include "../common/config.h"
 #include "communication.h"
 #include "config.h"
@@ -31,9 +33,17 @@ static PID pi(PID_KP, PID_KI, PID_KD, PID_OUT_MIN, PID_OUT_MAX);
 
 static float setpointF = SETPOINT_DEFAULT_F;
 static bool runFlag = false;
-static bool outletFaultActive = false;
 static unsigned long lastLoopMs = 0;
 static bool printedCsvHeader = false;
+
+enum class FaultCode : uint8_t {
+  None = 0,
+  LinkLoss,
+  OutletSensorFault,
+  OutletOutOfBounds,
+};
+
+static FaultCode activeFault = FaultCode::None;
 
 static void enterSafeState(const char* reason) {
   if (reason != nullptr) {
@@ -61,6 +71,8 @@ void setup() {
 void loop() {
   (void) temperatureService();
 
+  const unsigned long nowMs = millis();
+
   CommCommand cmd{};
   if (commPollCommand(cmd)) {
     if (cmd.lastOk) {
@@ -76,33 +88,58 @@ void loop() {
     }
   }
 
+  FaultCode detectedFault = FaultCode::None;
+  const char* faultMsg = nullptr;
+  char boundsMsg[96];
+
+  const unsigned long lastRxMs = commLastRxMs();
+  if (runFlag &&
+      (lastRxMs == 0 || (unsigned long) (nowMs - lastRxMs) > COMM_LINK_TIMEOUT_MS)) {
+    detectedFault = FaultCode::LinkLoss;
+    faultMsg = "LINK ERROR: No UI command for 2s → closing valves";
+    runFlag = false;
+    commMarkLinkLost();
+  }
+
+  const TemperatureReading& outlet = temperatureGetReading(TempSensor::OUTLET);
+  if (detectedFault == FaultCode::None && runFlag) {
+    if (!outlet.present || !outlet.valid) {
+      detectedFault = FaultCode::OutletSensorFault;
+      faultMsg = "TEMP ERROR: Outlet sensor fault → closing valves";
+      runFlag = false;
+    } else if ((outlet.filteredF < OUTLET_MIN_PLAUSIBLE_F) ||
+               (outlet.filteredF > OUTLET_MAX_PLAUSIBLE_F)) {
+      detectedFault = FaultCode::OutletOutOfBounds;
+      snprintf(boundsMsg,
+               sizeof(boundsMsg),
+               "TEMP ERROR: Outlet %.1fF out of bounds (%.0f-%.0fF) → closing valves",
+               outlet.filteredF,
+               OUTLET_MIN_PLAUSIBLE_F,
+               OUTLET_MAX_PLAUSIBLE_F);
+      faultMsg = boundsMsg;
+      runFlag = false;
+    }
+  }
+
+  if (detectedFault != FaultCode::None) {
+    if (activeFault != detectedFault || detectedFault == FaultCode::OutletOutOfBounds) {
+      enterSafeState(faultMsg);
+    } else {
+      enterSafeState(nullptr);
+    }
+    activeFault = detectedFault;
+    delay(LOOP_DELAY_MS);
+    return;
+  }
+
   if (!runFlag) {
-    outletFaultActive = false;
+    activeFault = FaultCode::None;
     enterSafeState(nullptr);
     delay(LOOP_DELAY_MS);
     return;
   }
 
-  const TemperatureReading& outlet = temperatureGetReading(TempSensor::OUTLET);
-  if (!outlet.present || !outlet.valid) {
-    if (!outletFaultActive) {
-      const char* msg = !outlet.present
-                            ? "TEMP ERROR: Outlet sensor missing → closing valves"
-                            : "TEMP ERROR: Invalid outlet reading → closing valves";
-      enterSafeState(msg);
-    } else {
-      enterSafeState(nullptr);
-    }
-    outletFaultActive = true;
-    delay(LOOP_DELAY_MS);
-    return;
-  }
-  if (outletFaultActive) {
-    Serial.println("TEMP INFO: Outlet sensor recovered");
-    outletFaultActive = false;
-  }
-
-  const unsigned long nowMs = millis();
+  activeFault = FaultCode::None;
   const float dtSec =
       lastLoopMs ? (nowMs - lastLoopMs) / 1000.0f : LOOP_DELAY_MS / 1000.0f;
   lastLoopMs = nowMs;

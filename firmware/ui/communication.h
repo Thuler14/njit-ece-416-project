@@ -49,6 +49,9 @@ bool commInit();
 // Send current setpoint and run-state to Control Unit
 bool commSendSetpoint(float setpointF, bool runFlag);
 
+// Heartbeat/service function to be called from loop() with millis()
+// Keeps link alive while runFlag is true using the last sent state
+void commHeartbeatTick(unsigned long nowMs);
 
 // Check if communication status has changed since last poll
 bool commPollStatus(CommStatus& outStatus);

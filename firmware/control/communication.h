@@ -46,3 +46,9 @@ bool commInit();
 
 // Poll for a new command from the UI (returns true if new data received)
 bool commPollCommand(CommCommand& outCmd);
+
+// Timestamp (millis) of the last valid packet received from the UI
+unsigned long commLastRxMs();
+
+// Mark link as lost (resets last RX timestamp)
+void commMarkLinkLost();

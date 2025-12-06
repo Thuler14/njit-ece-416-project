@@ -96,6 +96,9 @@ void loop() {
     commSendSetpoint(setpointF, runFlag);
   }
 
+  // Heartbeat: keep link alive while running
+  commHeartbeatTick(millis());
+
   // Check if comm status changed (pending, ACK, or TX fail)
   CommStatus st{};
   bool statusChanged = commPollStatus(st);

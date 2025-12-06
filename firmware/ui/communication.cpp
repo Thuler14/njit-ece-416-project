@@ -4,12 +4,16 @@
 #include <EspNowLink.h>
 
 #include "../common/config.h"
+#include "config.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/portmacro.h"
 
 // TX sequence tracking
 static uint16_t s_seq = 0;          // next sequence to send
 static uint16_t s_inFlightSeq = 0;  // 0 = none in flight
+static unsigned long s_lastHeartbeatMs = 0;
+static float s_lastSetpointF = SETPOINT_DEFAULT_F;
+static bool s_lastRunFlag = false;
 
 // Current UI→CTRL communication status
 static CommStatus s_status{/*txCount=*/0, /*lastSeq=*/0, /*lastOk=*/true, /*pending=*/false};
@@ -65,12 +69,12 @@ bool commInit() {
   return espnow_link_begin(config) == ENL_OK;
 }
 
-bool commSendSetpoint(float setpointF, bool runFlag) {
+static bool sendCurrent(unsigned long nowMs) {
   COMM_Payload p{};
-  p.ms = millis();
+  p.ms = nowMs;
   p.seq = ++s_seq;
-  p.setpointF = setpointF;
-  p.flags = runFlag ? COMM_FLAG_RUN : 0;
+  p.setpointF = s_lastSetpointF;
+  p.flags = s_lastRunFlag ? COMM_FLAG_RUN : 0;
 
   // Mark TX as in-flight
   portENTER_CRITICAL(&s_statusMux);
@@ -80,6 +84,8 @@ bool commSendSetpoint(float setpointF, bool runFlag) {
   portEXIT_CRITICAL(&s_statusMux);
 
   bool ok = espnow_link_send(&p, sizeof(p)) == ENL_OK;
+  s_lastHeartbeatMs = nowMs;
+
   if (!ok) {
     // Immediate send failure (no ACK expected)
     portENTER_CRITICAL(&s_statusMux);
@@ -93,6 +99,23 @@ bool commSendSetpoint(float setpointF, bool runFlag) {
   }
 
   return ok;
+}
+
+bool commSendSetpoint(float setpointF, bool runFlag) {
+  s_lastSetpointF = setpointF;
+  s_lastRunFlag = runFlag;
+  return sendCurrent(millis());
+}
+
+void commHeartbeatTick(unsigned long nowMs) {
+  if (!s_lastRunFlag) return;
+
+  CommStatus st{};
+  commGetStatus(st);
+  if (st.pending) return;
+  if ((nowMs - s_lastHeartbeatMs) < UI_HEARTBEAT_MS) return;
+
+  (void) sendCurrent(nowMs);
 }
 
 bool commPollStatus(CommStatus& outStatus) {
