@@ -26,13 +26,14 @@
 #include "temperature.h"
 #include "valve_mix.h"
 
-static constexpr float LOOP_DT_SEC = 0.012f;
 static constexpr uint16_t LOOP_DELAY_MS = 12;
-static PID pi(0.10f, 0.08f, 0.0f, 1.0f);
+static PID pi(PID_KP, PID_KI, PID_KD, PID_OUT_MIN, PID_OUT_MAX);
 
 static float setpointF = SETPOINT_DEFAULT_F;
 static bool runFlag = false;
 static bool outletFaultActive = false;
+static unsigned long lastLoopMs = 0;
+static bool printedCsvHeader = false;
 
 static void enterSafeState(const char* reason) {
   if (reason != nullptr) {
@@ -101,13 +102,31 @@ void loop() {
     outletFaultActive = false;
   }
 
+  const unsigned long nowMs = millis();
+  const float dtSec =
+      lastLoopMs ? (nowMs - lastLoopMs) / 1000.0f : LOOP_DELAY_MS / 1000.0f;
+  lastLoopMs = nowMs;
+
   const float outletTempF = outlet.filteredF;
   const float errorF = setpointF - outletTempF;
-  const float ratio = pi.update(errorF, LOOP_DT_SEC);
+  const float ratio = pi.update(errorF, dtSec);
   applyMixRatio(ratio);
 
-  Serial.printf("OUT=%.2fF / SET=%.2fF | error=%.2fF | ratio=%.2f\n",
-                outletTempF, setpointF, errorF, ratio);
+  if (PID_LOG_CSV) {
+    if (!printedCsvHeader) {
+      Serial.println("t_ms,out_f,set_f,error_f,ratio");
+      printedCsvHeader = true;
+    }
+    Serial.printf("%lu,%.2f,%.2f,%.2f,%.2f\n",
+                  (unsigned long) nowMs,
+                  outletTempF,
+                  setpointF,
+                  errorF,
+                  ratio);
+  } else {
+    Serial.printf("OUT=%.2fF / SET=%.2fF | error=%.2fF | ratio=%.2f\n",
+                  outletTempF, setpointF, errorF, ratio);
+  }
 
   delay(LOOP_DELAY_MS);
 }
