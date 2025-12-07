@@ -51,6 +51,12 @@ constexpr float FLOW_K_PULSES_PER_ML = 7.5f;  // K-factor: pulses per mL of wate
 constexpr unsigned FLOW_WINDOW_MS = 500;      // Sampling window (ms)
 
 // ====================================================
+// Emergency Stop Switch
+// ====================================================
+
+constexpr uint8_t ESTOP_PIN = 33;  // E-stop button input
+
+// ====================================================
 // PID Controller (Outlet Temperature)
 // ====================================================
 
@@ -59,7 +65,7 @@ constexpr float PID_KI = 0.08f;          // Integral gain (per second)
 constexpr float PID_KD = 0.0f;           // Derivative gain
 constexpr float PID_OUT_MIN = 0.0f;      // Output lower bound (mix ratio)
 constexpr float PID_OUT_MAX = 1.0f;      // Output upper bound (mix ratio)
-constexpr bool PID_LOG_CSV = false;      // Enable CSV logging (time_ms,out_f,set_f,error_f,ratio)
+constexpr bool PID_LOG_CSV = true;      // Enable CSV logging (time_ms,out_f,set_f,error_f,ratio)
 
 // ====================================================
 // Safety / Communication

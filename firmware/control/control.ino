@@ -40,9 +40,11 @@ static bool loggerHeaderPrinted = false;
 static float lastRatio = 0.0f;
 static float lastU = 0.0f;
 static void logCsvIfDue(unsigned long nowMs, const TemperatureReading& outlet, bool linkOk);
+static bool estopPressed();
 
 enum class FaultCode : uint8_t {
   None = 0,
+  EStop,
   LinkLoss,
   OutletSensorFault,
   OutletOutOfBounds,
@@ -65,6 +67,8 @@ void setup() {
 
   if (!commInit())
     while (1) delay(1000);
+
+  pinMode(ESTOP_PIN, INPUT_PULLUP);
 
   if (!flowSensorInit()) {
     Serial.println("FLOW WARN: Flow sensor init failed");
@@ -106,31 +110,38 @@ void loop() {
   const char* faultMsg = nullptr;
   char boundsMsg[96];
 
-  if (runFlag &&
-      (lastRxMs == 0 || (unsigned long) (nowMs - lastRxMs) > COMM_LINK_TIMEOUT_MS)) {
-    detectedFault = FaultCode::LinkLoss;
-    faultMsg = "LINK ERROR: No UI command for 2s → closing valves";
-    runFlag = false;
-    commMarkLinkLost();
-  }
-
+  const bool estop = estopPressed();
   const TemperatureReading& outlet = temperatureGetReading(TempSensor::OUTLET);
-  if (detectedFault == FaultCode::None && runFlag) {
-    if (!outlet.present || !outlet.valid) {
-      detectedFault = FaultCode::OutletSensorFault;
-      faultMsg = "TEMP ERROR: Outlet sensor fault → closing valves";
+  if (estop) {
+    detectedFault = FaultCode::EStop;
+    faultMsg = "E-STOP: switch active → closing valves";
+    runFlag = false;
+  } else {
+    if (runFlag &&
+        (lastRxMs == 0 || (unsigned long) (nowMs - lastRxMs) > COMM_LINK_TIMEOUT_MS)) {
+      detectedFault = FaultCode::LinkLoss;
+      faultMsg = "LINK ERROR: No UI command for 2s → closing valves";
       runFlag = false;
-    } else if ((outlet.filteredF < OUTLET_MIN_PLAUSIBLE_F) ||
-               (outlet.filteredF > OUTLET_MAX_PLAUSIBLE_F)) {
-      detectedFault = FaultCode::OutletOutOfBounds;
-      snprintf(boundsMsg,
-               sizeof(boundsMsg),
-               "TEMP ERROR: Outlet %.1fF out of bounds (%.0f-%.0fF) → closing valves",
-               outlet.filteredF,
-               OUTLET_MIN_PLAUSIBLE_F,
-               OUTLET_MAX_PLAUSIBLE_F);
-      faultMsg = boundsMsg;
-      runFlag = false;
+      commMarkLinkLost();
+    }
+
+    if (detectedFault == FaultCode::None && runFlag) {
+      if (!outlet.present || !outlet.valid) {
+        detectedFault = FaultCode::OutletSensorFault;
+        faultMsg = "TEMP ERROR: Outlet sensor fault → closing valves";
+        runFlag = false;
+      } else if ((outlet.filteredF < OUTLET_MIN_PLAUSIBLE_F) ||
+                 (outlet.filteredF > OUTLET_MAX_PLAUSIBLE_F)) {
+        detectedFault = FaultCode::OutletOutOfBounds;
+        snprintf(boundsMsg,
+                 sizeof(boundsMsg),
+                 "TEMP ERROR: Outlet %.1fF out of bounds (%.0f-%.0fF) → closing valves",
+                 outlet.filteredF,
+                 OUTLET_MIN_PLAUSIBLE_F,
+                 OUTLET_MAX_PLAUSIBLE_F);
+        faultMsg = boundsMsg;
+        runFlag = false;
+      }
     }
   }
 
@@ -193,6 +204,10 @@ void loop() {
   }
 
   delay(LOOP_DELAY_MS);
+}
+
+static bool estopPressed() {
+  return digitalRead(ESTOP_PIN) == LOW;
 }
 
 static void logCsvIfDue(unsigned long nowMs, const TemperatureReading& outlet, bool linkOk) {
