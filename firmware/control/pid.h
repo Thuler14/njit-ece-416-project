@@ -29,6 +29,12 @@ class PID {
   // Update controller state with new error measurement and timestep (seconds).
   float update(float error, float dtSeconds);
 
+  // Last output returned by update()
+  float lastOutput() const { return lastOutputValue; }
+
+  float getKp() const { return Kp; }
+  float getKi() const { return Ki; }
+
   // Reset integrator to zero (useful when disabling control loop).
   void reset();
 
@@ -44,4 +50,5 @@ class PID {
   float outMax;
   float prevError;
   bool hasPrevError;
+  float lastOutputValue;
 };
