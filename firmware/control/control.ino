@@ -24,17 +24,22 @@
 #include "../common/config.h"
 #include "communication.h"
 #include "config.h"
+#include "flow_sensor.h"
 #include "pid.h"
 #include "temperature.h"
 #include "valve_mix.h"
 
 static constexpr uint16_t LOOP_DELAY_MS = 12;
+static constexpr uint16_t LOGGER_PERIOD_MS = 100;
 static PID pi(PID_KP, PID_KI, PID_KD, PID_OUT_MIN, PID_OUT_MAX);
 
 static float setpointF = SETPOINT_DEFAULT_F;
 static bool runFlag = false;
-static unsigned long lastLoopMs = 0;
-static bool printedCsvHeader = false;
+static uint32_t lastOutletSampleMs = 0;
+static bool loggerHeaderPrinted = false;
+static float lastRatio = 0.0f;
+static float lastU = 0.0f;
+static void logCsvIfDue(unsigned long nowMs, const TemperatureReading& outlet, bool linkOk);
 
 enum class FaultCode : uint8_t {
   None = 0,
@@ -51,6 +56,7 @@ static void enterSafeState(const char* reason) {
   }
   valveMixCloseAll();
   pi.reset();
+  lastOutletSampleMs = 0;
 }
 
 void setup() {
@@ -59,6 +65,10 @@ void setup() {
 
   if (!commInit())
     while (1) delay(1000);
+
+  if (!flowSensorInit()) {
+    Serial.println("FLOW WARN: Flow sensor init failed");
+  }
 
   if (!temperatureInit()) {
     Serial.println("TEMP ERROR: No DS18B20 sensors detected");
@@ -70,8 +80,12 @@ void setup() {
 
 void loop() {
   (void) temperatureService();
+  (void) flowSensorUpdate();
 
   const unsigned long nowMs = millis();
+  const unsigned long lastRxMs = commLastRxMs();
+  const bool linkOk =
+      (lastRxMs != 0) && ((unsigned long) (nowMs - lastRxMs) <= COMM_LINK_TIMEOUT_MS);
 
   CommCommand cmd{};
   if (commPollCommand(cmd)) {
@@ -92,7 +106,6 @@ void loop() {
   const char* faultMsg = nullptr;
   char boundsMsg[96];
 
-  const unsigned long lastRxMs = commLastRxMs();
   if (runFlag &&
       (lastRxMs == 0 || (unsigned long) (nowMs - lastRxMs) > COMM_LINK_TIMEOUT_MS)) {
     detectedFault = FaultCode::LinkLoss;
@@ -128,6 +141,7 @@ void loop() {
       enterSafeState(nullptr);
     }
     activeFault = detectedFault;
+    logCsvIfDue(nowMs, outlet, linkOk);
     delay(LOOP_DELAY_MS);
     return;
   }
@@ -135,35 +149,78 @@ void loop() {
   if (!runFlag) {
     activeFault = FaultCode::None;
     enterSafeState(nullptr);
+    logCsvIfDue(nowMs, outlet, linkOk);
+    Serial.printf("RUN=OFF | OUT=%.2fF | SET=%.2fF | link=%s | flow=%.2f L/min\n",
+                  outlet.filteredF,
+                  setpointF,
+                  linkOk ? "OK" : "LOST",
+                  flowSensorGet().lpm);
     delay(LOOP_DELAY_MS);
     return;
   }
 
   activeFault = FaultCode::None;
-  const float dtSec =
-      lastLoopMs ? (nowMs - lastLoopMs) / 1000.0f : LOOP_DELAY_MS / 1000.0f;
-  lastLoopMs = nowMs;
+  const uint32_t sampleMs = outlet.sampleMs;
+  if (sampleMs == 0 || sampleMs == lastOutletSampleMs) {
+    logCsvIfDue(nowMs, outlet, linkOk);
+    delay(LOOP_DELAY_MS);
+    return;
+  }
+
+  const float dtSec = (lastOutletSampleMs == 0)
+                          ? (TEMP_LOOP_DT_MS / 1000.0f)
+                          : (sampleMs - lastOutletSampleMs) / 1000.0f;
+  lastOutletSampleMs = sampleMs;
 
   const float outletTempF = outlet.filteredF;
   const float errorF = setpointF - outletTempF;
   const float ratio = pi.update(errorF, dtSec);
+  lastU = pi.lastOutput();
+  lastRatio = ratio;
   applyMixRatio(ratio);
 
   if (PID_LOG_CSV) {
-    if (!printedCsvHeader) {
-      Serial.println("t_ms,out_f,set_f,error_f,ratio");
-      printedCsvHeader = true;
-    }
-    Serial.printf("%lu,%.2f,%.2f,%.2f,%.2f\n",
-                  (unsigned long) nowMs,
+    logCsvIfDue(sampleMs, outlet, linkOk);
+  } else {
+    const FlowReading flow = flowSensorGet();
+    Serial.printf("RUN=ON | OUT=%.2fF / SET=%.2fF | error=%.2fF | ratio=%.2f | flow=%.2f L/min | link=%s\n",
                   outletTempF,
                   setpointF,
                   errorF,
-                  ratio);
-  } else {
-    Serial.printf("OUT=%.2fF / SET=%.2fF | error=%.2fF | ratio=%.2f\n",
-                  outletTempF, setpointF, errorF, ratio);
+                  ratio,
+                  flow.lpm,
+                  linkOk ? "OK" : "LOST");
   }
 
   delay(LOOP_DELAY_MS);
+}
+
+static void logCsvIfDue(unsigned long nowMs, const TemperatureReading& outlet, bool linkOk) {
+  if (!PID_LOG_CSV) return;
+
+  static unsigned long lastLogMs = 0;
+  if (lastLogMs != 0 && (nowMs - lastLogMs) < LOGGER_PERIOD_MS) {
+    return;
+  }
+
+  if (!loggerHeaderPrinted) {
+    Serial.println("ms,setF,T_out_raw,T_out_filt,ratio,u,Kp,Ki,flow_lpm,link_ok");
+    loggerHeaderPrinted = true;
+  }
+
+  const FlowReading flow = flowSensorGet();
+
+  Serial.printf("%lu,%.1f,%.2f,%.2f,%.3f,%.3f,%.3f,%.3f,%.3f,%d\n",
+                (unsigned long) nowMs,
+                setpointF,
+                outlet.rawF,
+                outlet.filteredF,
+                lastRatio,
+                lastU,
+                pi.getKp(),
+                pi.getKi(),
+                flow.lpm,
+                linkOk ? 1 : 0);
+
+  lastLogMs = nowMs;
 }
