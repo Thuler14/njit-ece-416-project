@@ -18,10 +18,14 @@
  *  Data Structures:
  *    struct DisplayState {
  *      float setpointF;       // current temperature setpoint (°F)
+ *      float outletTempF;     // latest outlet temperature from Control (°F)
+ *      float stepF;           // current step size for adjustments
+ *      bool  showingSetpoint; // true when user is editing/pending
+ *      bool  outletValid;     // outletTempF is valid
  *      bool  runFlag;         // true=ON, false=OFF
  *      uint32_t txDoneCount;  // number of completed transmissions
  *      bool  lastResultOk;    // true=ACK received, false=TX failed
- *      bool  pending;         // true=waiting for ACK
+ *      bool  pending;         // true=waiting for ACK or unsent edits
  *    };
  * ================================================================
  */
@@ -35,7 +39,10 @@
 // Structure representing what will be shown on the OLED
 struct DisplayState {
   float setpointF;
+  float outletTempF;
   float stepF;
+  bool showingSetpoint;
+  bool outletValid;
   bool runFlag;
   uint32_t txDoneCount;
   bool lastResultOk;

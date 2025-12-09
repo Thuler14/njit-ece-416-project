@@ -26,7 +26,9 @@
  *      uint16_t lastSeq;   // last transmitted sequence number
  *      uint32_t txCount;   // total successful or failed transmissions
  *      bool     lastOk;    // true=ACK received, false=TX failed
- *      bool     pending;   // true=awaiting ACK for in-flight TX
+ *      bool     pending;   // true=awaiting ACK for user TX (setpoint/run)
+ *      float    outletTempF;  // latest outlet temperature mirrored from Control
+ *      bool     outletValid;  // true if outletTempF is valid
  *    };
  * ================================================================
  */
@@ -41,6 +43,8 @@ struct CommStatus {
   uint32_t txCount;
   bool lastOk;
   bool pending;
+  float outletTempF;
+  bool outletValid;
 };
 
 // Initialize communication layer (ESP-NOW transport setup)

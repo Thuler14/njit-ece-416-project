@@ -11,16 +11,22 @@
 // TX sequence tracking
 static uint16_t s_seq = 0;          // next sequence to send
 static uint16_t s_inFlightSeq = 0;  // 0 = none in flight
+static bool s_inFlightUserTx = false;
 static unsigned long s_lastHeartbeatMs = 0;
 static float s_lastSetpointF = SETPOINT_DEFAULT_F;
 static bool s_lastRunFlag = false;
 
 // Current UI→CTRL communication status
-static CommStatus s_status{/*txCount=*/0, /*lastSeq=*/0, /*lastOk=*/true, /*pending=*/false};
+static CommStatus s_status{/*lastSeq=*/0,
+                           /*txCount=*/0,
+                           /*lastOk=*/true,
+                           /*pending=*/false,
+                           /*outletTempF=*/0.0f,
+                           /*outletValid=*/false};
 
 static volatile bool s_statusDirty = false;  // status changed since last poll
 
-// Protects s_status, s_statusDirty, s_inFlightSeq
+// Protects s_status, s_statusDirty, s_inFlightSeq, s_inFlightUserTx
 static portMUX_TYPE s_statusMux = portMUX_INITIALIZER_UNLOCKED;
 
 static void on_rx(const uint8_t src_mac[6], const uint8_t* data, size_t len, void* ctx) {
@@ -33,9 +39,12 @@ static void on_rx(const uint8_t src_mac[6], const uint8_t* data, size_t len, voi
     portENTER_CRITICAL(&s_statusMux);
     s_status.lastSeq = p.seq;
     s_status.lastOk = true;
-    s_status.pending = false;
+    if (s_inFlightUserTx) s_status.pending = false;
     s_status.txCount++;
+    s_status.outletTempF = p.setpointF;
+    s_status.outletValid = (p.flags & COMM_FLAG_TEMP_VALID);
     s_inFlightSeq = 0;
+    s_inFlightUserTx = false;
     s_statusDirty = true;
     portEXIT_CRITICAL(&s_statusMux);
   }
@@ -46,9 +55,10 @@ static void on_tx(const uint8_t dst_mac[6], bool ok, void* ctx) {
     portENTER_CRITICAL(&s_statusMux);
     s_status.lastSeq = s_inFlightSeq;
     s_status.lastOk = false;
-    s_status.pending = false;
+    if (s_inFlightUserTx) s_status.pending = false;
     s_status.txCount++;
     s_inFlightSeq = 0;
+    s_inFlightUserTx = false;
     s_statusDirty = true;
     portEXIT_CRITICAL(&s_statusMux);
   }
@@ -69,7 +79,15 @@ bool commInit() {
   return espnow_link_begin(config) == ENL_OK;
 }
 
-static bool sendCurrent(unsigned long nowMs) {
+static bool sendCurrent(unsigned long nowMs, bool userTx) {
+  // Avoid stomping an in-flight packet (including heartbeats)
+  portENTER_CRITICAL(&s_statusMux);
+  if (s_inFlightSeq != 0) {
+    portEXIT_CRITICAL(&s_statusMux);
+    return false;
+  }
+  portEXIT_CRITICAL(&s_statusMux);
+
   COMM_Payload p{};
   p.ms = nowMs;
   p.seq = ++s_seq;
@@ -79,8 +97,11 @@ static bool sendCurrent(unsigned long nowMs) {
   // Mark TX as in-flight
   portENTER_CRITICAL(&s_statusMux);
   s_inFlightSeq = p.seq;
-  s_status.pending = true;
-  s_statusDirty = true;
+  s_inFlightUserTx = userTx;
+  if (userTx) {
+    s_status.pending = true;
+    s_statusDirty = true;
+  }
   portEXIT_CRITICAL(&s_statusMux);
 
   bool ok = espnow_link_send(&p, sizeof(p)) == ENL_OK;
@@ -91,9 +112,10 @@ static bool sendCurrent(unsigned long nowMs) {
     portENTER_CRITICAL(&s_statusMux);
     s_status.lastSeq = p.seq;
     s_status.lastOk = false;
-    s_status.pending = false;
+    if (userTx) s_status.pending = false;
     s_status.txCount++;
     s_inFlightSeq = 0;
+    s_inFlightUserTx = false;
     s_statusDirty = true;
     portEXIT_CRITICAL(&s_statusMux);
   }
@@ -104,18 +126,18 @@ static bool sendCurrent(unsigned long nowMs) {
 bool commSendSetpoint(float setpointF, bool runFlag) {
   s_lastSetpointF = setpointF;
   s_lastRunFlag = runFlag;
-  return sendCurrent(millis());
+  return sendCurrent(millis(), /*userTx=*/true);
 }
 
 void commHeartbeatTick(unsigned long nowMs) {
-  if (!s_lastRunFlag) return;
-
-  CommStatus st{};
-  commGetStatus(st);
-  if (st.pending) return;
+  // Avoid overlapping with any in-flight packet
+  portENTER_CRITICAL(&s_statusMux);
+  bool inFlight = (s_inFlightSeq != 0);
+  portEXIT_CRITICAL(&s_statusMux);
+  if (inFlight) return;
   if ((nowMs - s_lastHeartbeatMs) < UI_HEARTBEAT_MS) return;
 
-  (void) sendCurrent(nowMs);
+  (void) sendCurrent(nowMs, /*userTx=*/false);
 }
 
 bool commPollStatus(CommStatus& outStatus) {

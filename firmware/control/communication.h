@@ -18,6 +18,7 @@
  *  Interface:
  *    bool commInit();
  *    bool commPollCommand(CommCommand& outCmd);
+ *    void commUpdateOutletTemp(float outletTempF, bool valid);
  *
  *  Data Structures:
  *    struct CommCommand {
@@ -52,3 +53,6 @@ unsigned long commLastRxMs();
 
 // Mark link as lost (resets last RX timestamp)
 void commMarkLinkLost();
+
+// Provide latest outlet temperature so ACK packets can mirror it back to the UI
+void commUpdateOutletTemp(float outletTempF, bool valid);

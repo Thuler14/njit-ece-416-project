@@ -112,6 +112,7 @@ void loop() {
 
   const bool estop = estopPressed();
   const TemperatureReading& outlet = temperatureGetReading(TempSensor::OUTLET);
+  commUpdateOutletTemp(outlet.filteredF, outlet.present && outlet.valid);
   if (estop) {
     detectedFault = FaultCode::EStop;
     faultMsg = "E-STOP: switch active → closing valves";

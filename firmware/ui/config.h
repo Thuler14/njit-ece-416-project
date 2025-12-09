@@ -33,3 +33,10 @@ constexpr unsigned long BTN_REPEAT_MS = 150;        // interval between subseque
 // ====================================================
 
 constexpr unsigned long UI_HEARTBEAT_MS = 1000;  // UI -> Control heartbeat interval
+
+// ====================================================
+// UI interaction pacing
+// ====================================================
+
+// Delay after the last setpoint tweak before transmitting it to Control (ms)
+constexpr unsigned long UI_SETPOINT_SEND_DELAY_MS = 500;
