@@ -3,7 +3,8 @@
 # Purpose: Read the control ESP32 CSV logger from serial in real time
 #          and display live plots (temperatures, ratio/u, flow).
 # Usage:
-#   python3 tests/scripts/m2_logger_live_plot.py --port /dev/ttyUSB0
+#   python3 tests/scripts/m2_logger_live_plot.py --port COM3
+#   python3 tests/scripts/m2_logger_live_plot.py --port /dev/tty.usbserial-0001
 #   python3 tests/scripts/m2_logger_live_plot.py --port /dev/tty.usbserial-0001 --window 120
 # Optional: --outfile to save the streamed data to disk while plotting.
 # ====================================================
@@ -88,9 +89,9 @@ def main() -> None:
   (line_raw,) = ax_temp.plot([], [], label="Outlet (raw)", color="#888888", linestyle="--", alpha=0.7)
   (line_set,) = ax_temp.plot([], [], label="Setpoint", color="#1f78d1", linewidth=2)
   ax_temp.set_ylabel("Temperature (°F)")
-  ax_temp.set_title("Live Control Logger", pad=8)
+  ax_temp.set_title("Live Control Logger (100 ms cadence)", pad=8)
   ax_temp.grid(True, linestyle="--", linewidth=0.6, alpha=0.6)
-  ax_temp.legend(loc="lower right")
+  ax_temp.legend(loc="upper left")
 
   (line_ratio,) = ax_ctrl.plot([], [], label="Mix Ratio", color="#00a36c", linewidth=2)
   (line_u,) = ax_ctrl.plot([], [], label="PI Output (u)", color="#9b4f96", linestyle="--", linewidth=2)
@@ -189,6 +190,7 @@ def main() -> None:
     # Shade link-loss regions
     [p.remove() for p in getattr(ax_ctrl, "_link_patches", [])] if hasattr(ax_ctrl, "_link_patches") else None
     patches = []
+    first_span = True
     if link_ok and any(v == 0 for v in link_ok):
       start = None
       t0 = 0.0
@@ -197,19 +199,32 @@ def main() -> None:
           start = idx
         if val == 1 and start is not None:
           patches.append(
-              ax_ctrl.axvspan(times[start] / 1000.0, times[idx - 1] / 1000.0, color="#ffb3b3", alpha=0.4)
+              ax_ctrl.axvspan(
+                  times[start] / 1000.0,
+                  times[idx - 1] / 1000.0,
+                  color="#ffb3b3",
+                  alpha=0.4,
+                  label="Link Lost" if first_span else None,
+              )
           )
+          first_span = False
           start = None
       if start is not None:
         patches.append(
-            ax_ctrl.axvspan(times[start] / 1000.0, times[-1] / 1000.0, color="#ffb3b3", alpha=0.4)
+            ax_ctrl.axvspan(
+                times[start] / 1000.0,
+                times[-1] / 1000.0,
+                color="#ffb3b3",
+                alpha=0.4,
+                label="Link Lost" if first_span else None,
+            )
         )
     ax_ctrl._link_patches = patches
 
     # Combine legends like static plot
     lines_ctrl, labels_ctrl = ax_ctrl.get_legend_handles_labels()
     lines_flow, labels_flow = ax_flow.get_legend_handles_labels()
-    ax_ctrl.legend(lines_ctrl + lines_flow, labels_ctrl + labels_flow, loc="upper right")
+    ax_ctrl.legend(lines_ctrl + lines_flow, labels_ctrl + labels_flow, loc="upper left")
 
     return line_filt, line_raw, line_set, line_ratio, line_u, line_flow
 

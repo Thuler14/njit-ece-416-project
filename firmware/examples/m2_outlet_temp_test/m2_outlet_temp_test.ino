@@ -18,7 +18,7 @@
 #define TEMP_MAX_VALID_C 125.0f
 #define TEMP_EMA_ALPHA 0.20f
 
-const DeviceAddress TEMP_OUT_ADDR = {0x28, 0x59, 0x4D, 0x12, 0x00, 0x00, 0x00, 0x9C};
+const DeviceAddress TEMP_OUT_ADDR = {0x28, 0x4D, 0xF1, 0xBA, 0x00, 0x00, 0x00, 0xC0};
 
 OneWire oneWire(TEMP_PIN_ONEWIRE);
 DallasTemperature sensors(&oneWire);

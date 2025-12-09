@@ -24,7 +24,7 @@ constexpr float OUTLET_MAX_PLAUSIBLE_F = 140.0f;
 // Scanned using: firmware/tools/m1_temp_scan/m1_temp_scan.ino
 const DeviceAddress TEMP_HOT_ADDR = {0x28, 0x8D, 0xAC, 0x12, 0x00, 0x00, 0x00, 0x93};   // Hot line
 const DeviceAddress TEMP_COLD_ADDR = {0x28, 0x2C, 0x4F, 0x12, 0x00, 0x00, 0x00, 0x6C};  // Cold line
-const DeviceAddress TEMP_OUT_ADDR = {0x28, 0x59, 0x4D, 0x12, 0x00, 0x00, 0x00, 0x9C};   // Outlet (mixed) line
+const DeviceAddress TEMP_OUT_ADDR = {0x28, 0x4D, 0xF1, 0xBA, 0x00, 0x00, 0x00, 0xC0};   // Outlet (mixed) line
 
 // ====================================================
 // Servo Motors (MG996R)

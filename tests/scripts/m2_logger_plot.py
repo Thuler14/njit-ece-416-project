@@ -26,7 +26,7 @@ def main() -> None:
   ax_temp.set_ylabel("Temperature (°F)")
   ax_temp.set_title("Control Logger Snapshot (100 ms cadence)", pad=8)
   ax_temp.grid(True, linestyle="--", linewidth=0.6, alpha=0.6)
-  ax_temp.legend(loc="lower right")
+  ax_temp.legend(loc="upper right")
 
   # Control effort (ratio/u) and flow
   ax_ctrl.plot(df["t_s"], df["ratio"], label="Mix Ratio", color="#00a36c", linewidth=2)
