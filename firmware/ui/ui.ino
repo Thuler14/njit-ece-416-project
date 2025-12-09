@@ -24,16 +24,22 @@
 static float setpointF = SETPOINT_DEFAULT_F;  // current setpoint
 static float stepF = SETPOINT_STEP_F;         // current setpoint step
 static bool runFlag = false;                  // true=ON, false=OFF
+static bool setpointDirty = false;            // true when setpoint changed but not yet sent
+static unsigned long lastSetpointEditMs = 0;  // last time the user adjusted setpoint
 
 // Map UI + comm status into DisplayState and draw on OLED
 static void updateDisplay(const CommStatus& st) {
+  const bool showingSetpoint = setpointDirty || st.pending;
   DisplayState ds{};
   ds.setpointF = setpointF;
+  ds.outletTempF = st.outletTempF;
   ds.stepF = stepF;
+  ds.showingSetpoint = showingSetpoint;
+  ds.outletValid = st.outletValid;
   ds.runFlag = runFlag;
   ds.txDoneCount = st.txCount;
   ds.lastResultOk = st.lastOk;
-  ds.pending = st.pending;
+  ds.pending = st.pending || setpointDirty;  // show pending when unsent edits exist
   displayDraw(ds);
 }
 
@@ -54,11 +60,19 @@ void setup() {
 }
 
 void loop() {
+  const unsigned long nowMs = millis();
+
   ButtonsEvents ev{};
   buttonsPoll(ev);
 
-  bool stateChanged = false;
   bool displayChanged = false;
+  bool txTriggered = false;
+  bool sendNow = false;
+
+  auto markSetpointDirty = [&]() {
+    setpointDirty = true;
+    lastSetpointEditMs = nowMs;
+  };
 
   if (ev.chordStepLong) {
     if (stepF <= 0.5f)
@@ -70,47 +84,63 @@ void loop() {
     displayChanged = true;
   } else if (ev.upClick || ev.upRepeat) {
     setpointF += stepF;
-    stateChanged = true;
+    markSetpointDirty();
     displayChanged = true;
   } else if (ev.downClick || ev.downRepeat) {
     setpointF -= stepF;
-    stateChanged = true;
+    markSetpointDirty();
     displayChanged = true;
   } else if (ev.aLong) {
     setpointF = SETPOINT_PRESET_A_F;
-    stateChanged = true;
+    markSetpointDirty();
     displayChanged = true;
   } else if (ev.bLong) {
     setpointF = SETPOINT_PRESET_B_F;
-    stateChanged = true;
+    markSetpointDirty();
     displayChanged = true;
   } else if (ev.okLong) {
     runFlag = !runFlag;
-    stateChanged = true;
+    sendNow = true;  // run/stop toggles send immediately
     displayChanged = true;
   }
 
-  // Send new state (marks TX as pending in communication layer)
-  if (stateChanged) {
+  if (setpointDirty) {
     setpointF = constrain(setpointF, SETPOINT_MIN_F, SETPOINT_MAX_F);
-    commSendSetpoint(setpointF, runFlag);
   }
 
   // Heartbeat: keep link alive while running
-  commHeartbeatTick(millis());
+  commHeartbeatTick(nowMs);
+
+  // Send setpoint after a quiet period with no edits
+  if (setpointDirty && (nowMs - lastSetpointEditMs) >= UI_SETPOINT_SEND_DELAY_MS) {
+    sendNow = true;
+  }
+
+  if (sendNow) {
+    bool ok = commSendSetpoint(setpointF, runFlag);
+    txTriggered = true;
+    if (setpointDirty) {
+      setpointDirty = !ok;
+      if (!ok) lastSetpointEditMs = nowMs;
+    } else if (!ok) {
+      // retry after a short pause if immediate send failed
+      setpointDirty = true;
+      lastSetpointEditMs = nowMs;
+    }
+  }
 
   // Check if comm status changed (pending, ACK, or TX fail)
   CommStatus st{};
   bool statusChanged = commPollStatus(st);
 
   // Redraw and log when UI state or comm status changes
-  if (stateChanged || displayChanged || statusChanged) {
+  if (displayChanged || statusChanged || txTriggered || setpointDirty) {
     if (!statusChanged) commGetStatus(st);
 
     updateDisplay(st);
 
-    if (stateChanged || statusChanged) {
-      if (st.pending)
+    if (txTriggered || statusChanged) {
+      if (st.pending || setpointDirty)
         Serial.println("UI->CTRL TX pending");
       else if (!st.lastOk)
         Serial.println("UI<-CTRL TX failed");

@@ -44,13 +44,23 @@ void displayDraw(const DisplayState& s) {
   oledDisplay.drawStr(0, 10, s.runFlag ? "RUN" : "STOP");
   drawRunIcon(s.runFlag);
 
+  // Mode label for main value
+  oledDisplay.drawStr(0, 24, s.showingSetpoint ? "SET" : "OUT");
+
   // ─────────────────────────────
   // Center: main setpoint (large)
   // ─────────────────────────────
   // Big numeric part
+  const bool valueValid = s.showingSetpoint || s.outletValid;
+  const float valueF = s.showingSetpoint ? s.setpointF : s.outletTempF;
+
   oledDisplay.setFont(u8g2_font_logisoso24_tf);  // 24-px tall font
   char tempStr[8];
-  snprintf(tempStr, sizeof(tempStr), "%3.1f", s.setpointF);
+  if (valueValid) {
+    snprintf(tempStr, sizeof(tempStr), "%3.1f", valueF);
+  } else {
+    snprintf(tempStr, sizeof(tempStr), "---");
+  }
 
   uint16_t tempW = oledDisplay.getStrWidth(tempStr);
   // Leave room on the right for "°F"

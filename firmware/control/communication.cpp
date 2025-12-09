@@ -15,6 +15,11 @@ static unsigned long s_lastRxMs = 0;  // millis() when last valid packet arrived
 // Protects s_lastCmd and s_newCmd
 static portMUX_TYPE s_cmdMux = portMUX_INITIALIZER_UNLOCKED;
 
+// Latest outlet temperature to mirror back to UI
+static float s_outletTempF = 0.0f;
+static bool s_outletTempValid = false;
+static portMUX_TYPE s_tempMux = portMUX_INITIALIZER_UNLOCKED;
+
 static void on_rx(const uint8_t src_mac[6], const uint8_t* data, size_t len, void* ctx) {
   COMM_Payload ack{};
   ack.ms = millis();
@@ -35,6 +40,12 @@ static void on_rx(const uint8_t src_mac[6], const uint8_t* data, size_t len, voi
 
     ack.seq = p.seq;
     ack.flags = COMM_FLAG_ACK;
+    portENTER_CRITICAL(&s_tempMux);
+    ack.setpointF = s_outletTempF;
+    if (s_outletTempValid) {
+      ack.flags |= COMM_FLAG_TEMP_VALID;
+    }
+    portEXIT_CRITICAL(&s_tempMux);
   } else {
     // Malformed packet: mark error and prepare ERR response
     cmd.lastOk = false;
@@ -91,4 +102,11 @@ unsigned long commLastRxMs() {
 
 void commMarkLinkLost() {
   s_lastRxMs = 0;
+}
+
+void commUpdateOutletTemp(float outletTempF, bool valid) {
+  portENTER_CRITICAL(&s_tempMux);
+  s_outletTempF = outletTempF;
+  s_outletTempValid = valid;
+  portEXIT_CRITICAL(&s_tempMux);
 }

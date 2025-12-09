@@ -26,7 +26,8 @@ constexpr uint8_t COMM_PROTOCOL_VERSION = 1;
 constexpr uint8_t COMM_FLAG_ACK = 1 << 0;  // Acknowledgment bit
 constexpr uint8_t COMM_FLAG_RUN = 1 << 1;  // Run/Stop bit
 constexpr uint8_t COMM_FLAG_ERR = 1 << 2;  // Error indication bit
-// bits 3–7 reserved
+constexpr uint8_t COMM_FLAG_TEMP_VALID = 1 << 3;  // Outlet temperature included/valid
+// bits 4–7 reserved
 
 // --- Payload Structure ---
 typedef struct __attribute__((packed)) {
