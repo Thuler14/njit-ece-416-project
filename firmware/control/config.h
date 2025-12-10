@@ -20,6 +20,16 @@ constexpr float TEMP_EMA_ALPHA = 0.20f;           // EMA filter (τ ≈ 0.4 s @1
 constexpr float OUTLET_MIN_PLAUSIBLE_F = 32.0f;
 constexpr float OUTLET_MAX_PLAUSIBLE_F = 140.0f;
 
+// Plausibility for individual lines (°F)
+constexpr float HOT_MIN_PLAUSIBLE_F = 50.0f;
+constexpr float HOT_MAX_PLAUSIBLE_F = 140.0f;
+constexpr float COLD_MIN_PLAUSIBLE_F = 32.0f;
+constexpr float COLD_MAX_PLAUSIBLE_F = 90.0f;
+
+// Rapid change detection
+constexpr float TEMP_RAPID_DELTA_F = 12.0f;          // Trigger if jump exceeds this delta
+constexpr unsigned TEMP_RAPID_WINDOW_MS = 1000;      // Time window for rapid change check
+
 // --- Sensor ROM Addresses ---
 // Scanned using: firmware/tools/m1_temp_scan/m1_temp_scan.ino
 const DeviceAddress TEMP_HOT_ADDR = {0x28, 0x9D, 0xE1, 0xBA, 0x00, 0x00, 0x00, 0x78};   // Hot line
