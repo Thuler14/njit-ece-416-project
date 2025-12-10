@@ -22,7 +22,9 @@ static CommStatus s_status{/*lastSeq=*/0,
                            /*lastOk=*/true,
                            /*pending=*/false,
                            /*outletTempF=*/0.0f,
-                           /*outletValid=*/false};
+                           /*outletValid=*/false,
+                           /*flowLpm=*/0.0f,
+                           /*flowValid=*/false};
 
 static volatile bool s_statusDirty = false;  // status changed since last poll
 
@@ -43,6 +45,8 @@ static void on_rx(const uint8_t src_mac[6], const uint8_t* data, size_t len, voi
     s_status.txCount++;
     s_status.outletTempF = p.setpointF;
     s_status.outletValid = (p.flags & COMM_FLAG_TEMP_VALID);
+    s_status.flowLpm = p.flowLpm;
+    s_status.flowValid = (p.flags & COMM_FLAG_FLOW_VALID);
     s_inFlightSeq = 0;
     s_inFlightUserTx = false;
     s_statusDirty = true;
@@ -92,6 +96,7 @@ static bool sendCurrent(unsigned long nowMs, bool userTx) {
   p.ms = nowMs;
   p.seq = ++s_seq;
   p.setpointF = s_lastSetpointF;
+  p.flowLpm = 0.0f;
   p.flags = s_lastRunFlag ? COMM_FLAG_RUN : 0;
 
   // Mark TX as in-flight

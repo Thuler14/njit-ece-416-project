@@ -90,6 +90,7 @@ void loop() {
   const unsigned long lastRxMs = commLastRxMs();
   const bool linkOk =
       (lastRxMs != 0) && ((unsigned long) (nowMs - lastRxMs) <= COMM_LINK_TIMEOUT_MS);
+  const FlowReading flow = flowSensorGet();
 
   CommCommand cmd{};
   if (commPollCommand(cmd)) {
@@ -112,7 +113,7 @@ void loop() {
 
   const bool estop = estopPressed();
   const TemperatureReading& outlet = temperatureGetReading(TempSensor::OUTLET);
-  commUpdateOutletTemp(outlet.filteredF, outlet.present && outlet.valid);
+  commUpdateOutletTemp(outlet.filteredF, outlet.present && outlet.valid, flow.lpm, flow.sampleMs != 0);
   if (estop) {
     detectedFault = FaultCode::EStop;
     faultMsg = "E-STOP: switch active → closing valves";
@@ -166,7 +167,7 @@ void loop() {
                   outlet.filteredF,
                   setpointF,
                   linkOk ? "OK" : "LOST",
-                  flowSensorGet().lpm);
+                  flow.lpm);
     delay(LOOP_DELAY_MS);
     return;
   }
@@ -194,7 +195,6 @@ void loop() {
   if (PID_LOG_CSV) {
     logCsvIfDue(sampleMs, outlet, linkOk);
   } else {
-    const FlowReading flow = flowSensorGet();
     Serial.printf("RUN=ON | OUT=%.2fF / SET=%.2fF | error=%.2fF | ratio=%.2f | flow=%.2f L/min | link=%s\n",
                   outletTempF,
                   setpointF,

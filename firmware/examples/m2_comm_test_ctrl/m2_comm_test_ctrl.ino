@@ -18,10 +18,15 @@ const uint8_t COMM_UI_MAC[6]{0x8C, 0x4F, 0x00, 0x35, 0x9B, 0xF4};
 const uint8_t COMM_PMK[16]{'s', 'h', 'o', 'w', 'e', 'r', 'c', 't', 'r', 'l', '_', 'p', 'm', 'k', '1', '6'};
 const uint8_t COMM_LMK[16]{'s', 't', 'a', 't', 'i', 'c', '_', 'l', 'm', 'k', '_', 'u', 'i', 'c', 't', 'r'};
 
+#define COMM_FLAG_ACK (1 << 0)
+#define COMM_FLAG_TEMP_VALID (1 << 3)
+#define COMM_FLAG_FLOW_VALID (1 << 4)
+
 typedef struct __attribute__((packed)) {
   uint32_t ms;
   uint16_t seq;
   float setpointF;
+  float flowLpm;
   uint8_t flags;  // bit0 = ACK
 } COMM_Payload;
 
@@ -86,11 +91,12 @@ void onRecv(const esp_now_recv_info_t* info, const uint8_t* data, int data_len) 
   memcpy(&rx, data, sizeof(rx));
   snprintf(m, sizeof(m), "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
-  Serial.printf("CTRL RECV <- %s seq=%u setpoint=%.2f ms=%lu\n",
-                m, rx.seq, rx.setpointF, (unsigned long) rx.ms);
+  Serial.printf("CTRL RECV <- %s seq=%u setpoint=%.2f flow=%.2f ms=%lu\n",
+                m, rx.seq, rx.setpointF, rx.flowLpm, (unsigned long) rx.ms);
 
   // echo ACK
-  COMM_Payload tx{rx.ms, rx.seq, rx.setpointF, 0x01};
+  COMM_Payload tx{rx.ms, rx.seq, rx.setpointF, 1.23f,
+                  (uint8_t) (COMM_FLAG_ACK | COMM_FLAG_TEMP_VALID | COMM_FLAG_FLOW_VALID)};
   esp_err_t e = esp_now_send(COMM_UI_MAC, (uint8_t*) &tx, sizeof(tx));
   Serial.printf("CTRL TX ACK -> %s seq=%u err=%d\n", m, rx.seq, (int) e);
 }

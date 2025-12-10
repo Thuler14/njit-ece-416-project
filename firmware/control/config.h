@@ -60,8 +60,8 @@ constexpr uint8_t ESTOP_PIN = 33;  // E-stop button input
 // PID Controller (Outlet Temperature)
 // ====================================================
 
-constexpr float PID_KP = 0.10f;          // Proportional gain
-constexpr float PID_KI = 0.08f;          // Integral gain (per second)
+constexpr float PID_KP = 0.025f;          // Proportional gain
+constexpr float PID_KI = 0.005f;          // Integral gain (per second)
 constexpr float PID_KD = 0.0f;           // Derivative gain
 constexpr float PID_OUT_MIN = 0.0f;      // Output lower bound (mix ratio)
 constexpr float PID_OUT_MAX = 1.0f;      // Output upper bound (mix ratio)

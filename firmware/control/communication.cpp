@@ -18,6 +18,8 @@ static portMUX_TYPE s_cmdMux = portMUX_INITIALIZER_UNLOCKED;
 // Latest outlet temperature to mirror back to UI
 static float s_outletTempF = 0.0f;
 static bool s_outletTempValid = false;
+static float s_flowLpm = 0.0f;
+static bool s_flowValid = false;
 static portMUX_TYPE s_tempMux = portMUX_INITIALIZER_UNLOCKED;
 
 static void on_rx(const uint8_t src_mac[6], const uint8_t* data, size_t len, void* ctx) {
@@ -44,6 +46,10 @@ static void on_rx(const uint8_t src_mac[6], const uint8_t* data, size_t len, voi
     ack.setpointF = s_outletTempF;
     if (s_outletTempValid) {
       ack.flags |= COMM_FLAG_TEMP_VALID;
+    }
+    ack.flowLpm = s_flowLpm;
+    if (s_flowValid) {
+      ack.flags |= COMM_FLAG_FLOW_VALID;
     }
     portEXIT_CRITICAL(&s_tempMux);
   } else {
@@ -104,9 +110,11 @@ void commMarkLinkLost() {
   s_lastRxMs = 0;
 }
 
-void commUpdateOutletTemp(float outletTempF, bool valid) {
+void commUpdateOutletTemp(float outletTempF, bool tempValid, float flowLpm, bool flowValid) {
   portENTER_CRITICAL(&s_tempMux);
   s_outletTempF = outletTempF;
-  s_outletTempValid = valid;
+  s_outletTempValid = tempValid;
+  s_flowLpm = flowLpm;
+  s_flowValid = flowValid;
   portEXIT_CRITICAL(&s_tempMux);
 }

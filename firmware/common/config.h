@@ -27,13 +27,15 @@ constexpr uint8_t COMM_FLAG_ACK = 1 << 0;  // Acknowledgment bit
 constexpr uint8_t COMM_FLAG_RUN = 1 << 1;  // Run/Stop bit
 constexpr uint8_t COMM_FLAG_ERR = 1 << 2;  // Error indication bit
 constexpr uint8_t COMM_FLAG_TEMP_VALID = 1 << 3;  // Outlet temperature included/valid
-// bits 4–7 reserved
+constexpr uint8_t COMM_FLAG_FLOW_VALID = 1 << 4;  // Flow data included/valid
+// bits 5–7 reserved
 
 // --- Payload Structure ---
 typedef struct __attribute__((packed)) {
   uint32_t ms;      // timestamp (ms)
   uint16_t seq;     // sequence number
   float setpointF;  // temperature setpoint
+  float flowLpm;    // flow rate (L/min), valid if COMM_FLAG_FLOW_VALID
   uint8_t flags;    // status bits (COMM_FLAG_*)
 } COMM_Payload;
 

@@ -26,6 +26,7 @@
  *      bool aClick,    aDblClick,    aLong,    aRepeat;
  *      bool bClick,    bDblClick,    bLong,    bRepeat;
  *      bool chordStepLong;
+ *      bool chordFlowLong;
  *    };
  * ================================================================
  */
@@ -78,6 +79,7 @@ struct ButtonsEvents {
 
   // Chords
   bool chordStepLong = false;
+  bool chordFlowLong = false;
 };
 
 // Initializes all buttons (active-low with pull-ups)
