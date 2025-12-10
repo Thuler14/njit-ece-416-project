@@ -18,8 +18,10 @@
 
 // Snapshot of the most recent flow measurement (YF-S201)
 struct FlowReading {
-  float lpm;        // Liters per minute
-  float Hz;         // Pulse frequency
+  float lpm;        // Filtered liters per minute (EMA)
+  float lpmRaw;     // Instantaneous liters per minute for the last window
+  float Hz;         // Filtered pulse frequency (EMA)
+  float HzRaw;      // Instantaneous pulse frequency for the last window
   uint32_t sampleMs;
   bool fresh;  // true if updated on the latest window
 };

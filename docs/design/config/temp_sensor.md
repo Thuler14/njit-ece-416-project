@@ -12,8 +12,8 @@
 | Constant | Description | Value |
 |:--|:--|:--:|
 | `TEMP_PIN_ONEWIRE` | GPIO pin for DS18B20 data line | `4` |
-| `TEMP_HOT_ADDR` | Hot inlet sensor | `0x288DAC1200000093` |
-| `TEMP_COLD_ADDR` | Cold inlet sensor | `0x282C4F120000006C` |
+| `TEMP_HOT_ADDR` | Hot inlet sensor | `0x289DE1BA00000078` |
+| `TEMP_COLD_ADDR` | Cold inlet sensor | `0x2884B3B4000000B6` |
 | `TEMP_OUT_ADDR` | Outlet sensor | `0x284DF1BA000000C0` |
 
 > Discovered using [`firmware/tools/m1_temp_scan/m1_temp_scan.ino`](../../../firmware/tools/m1_temp_scan/m1_temp_scan.ino).

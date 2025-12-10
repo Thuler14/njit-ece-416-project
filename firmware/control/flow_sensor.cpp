@@ -1,13 +1,16 @@
 #include "flow_sensor.h"
 
 #include <Arduino.h>
+#include <math.h>
 
 #include "config.h"
 
 static volatile uint32_t s_pulseCount = 0;
 static uint32_t s_lastCount = 0;
 static uint32_t s_lastWindowMs = 0;
-static FlowReading s_lastReading{0.0f, 0.0f, 0, false};
+static float s_filteredHz = 0.0f;
+static float s_filteredLpm = 0.0f;
+static FlowReading s_lastReading{0.0f, 0.0f, 0.0f, 0.0f, 0, false};
 static bool s_initialized = false;
 
 // ISR: increment pulse count on rising edge
@@ -31,7 +34,8 @@ bool flowSensorUpdate() {
   if (!s_initialized) return false;
 
   const uint32_t now = millis();
-  if ((now - s_lastWindowMs) < FLOW_WINDOW_MS) {
+  const uint32_t windowMs = now - s_lastWindowMs;
+  if (windowMs < FLOW_WINDOW_MS) {
     return false;
   }
 
@@ -43,17 +47,31 @@ bool flowSensorUpdate() {
   s_lastCount = count;
   s_lastWindowMs = now;
 
+  const uint32_t dtMs = windowMs == 0 ? 1 : windowMs;
+  const float hzRaw = (delta == 0) ? 0.0f : (1000.0f * delta) / (float) dtMs;
+  const float lpmRaw = (delta == 0)
+                           ? 0.0f
+                           : (hzRaw * 60.0f) / (FLOW_K_PULSES_PER_ML * 1000.0f);
+
+  if (s_lastReading.sampleMs == 0) {
+    // Seed the filter on the first measurement to avoid startup bias.
+    s_filteredHz = hzRaw;
+    s_filteredLpm = lpmRaw;
+  } else {
+    float alpha = 1.0f - expf(-(float) dtMs / (float) FLOW_FILTER_TAU_MS);
+    if (alpha < 0.0f) alpha = 0.0f;
+    if (alpha > 1.0f) alpha = 1.0f;
+    s_filteredHz += alpha * (hzRaw - s_filteredHz);
+    s_filteredLpm += alpha * (lpmRaw - s_filteredLpm);
+  }
+
   FlowReading reading{};
   reading.sampleMs = now;
   reading.fresh = true;
-
-  if (delta == 0) {
-    reading.Hz = 0.0f;
-    reading.lpm = 0.0f;
-  } else {
-    reading.Hz = (1000.0f * delta) / (float) FLOW_WINDOW_MS;
-    reading.lpm = (reading.Hz * 60.0f) / (FLOW_K_PULSES_PER_ML * 1000.0f);
-  }
+  reading.Hz = s_filteredHz;
+  reading.HzRaw = hzRaw;
+  reading.lpm = s_filteredLpm;
+  reading.lpmRaw = lpmRaw;
 
   s_lastReading = reading;
   return true;

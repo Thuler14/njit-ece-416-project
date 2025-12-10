@@ -22,6 +22,7 @@
 |:--|:--|:--:|
 | `FLOW_K_PULSES_PER_ML` | K-factor — pulses per mL of water (≈7500/L) | `7.5f` |
 | `FLOW_WINDOW_MS` | Sampling window for pulse counting (ms) | `500` |
+| `FLOW_FILTER_TAU_MS` | EMA time constant for smoothing flow readings (ms) | `1000` |
 
 ---
 
