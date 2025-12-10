@@ -49,8 +49,8 @@ struct ChordState {
 };
 
 static ChordState chords[] = {
-    {BUTTON_UP, BUTTON_DOWN, 2000, false, false, 0},
-    {BUTTON_COUNT, BUTTON_COUNT, 0, false, false, 0},
+    {BUTTON_UP, BUTTON_DOWN, 2000, false, false, 0},   // step size toggle
+    {BUTTON_A, BUTTON_B, 1500, false, false, 0},       // flow view
     {BUTTON_COUNT, BUTTON_COUNT, 0, false, false, 0},
 };
 
@@ -161,6 +161,7 @@ static void updateChords(unsigned long now) {
         btnState[c.a].suppressRelease = true;
         btnState[c.b].suppressRelease = true;
         if (i == 0) latched.chordStepLong = true;
+        if (i == 1) latched.chordFlowLong = true;
       }
     } else {
       c.isActive = false;
@@ -275,6 +276,7 @@ bool buttonsPoll(ButtonsEvents& out) {
   finishPendingSingles(now);
 
   bool any = latched.chordStepLong;
+  any |= latched.chordFlowLong;
   if (!any) {
     for (uint8_t i = 0; i < BUTTON_COUNT; ++i) {
       any |= latched.upClick || latched.upDblClick || latched.upLong || latched.upRepeat;

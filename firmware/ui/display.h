@@ -20,8 +20,11 @@
  *      float setpointF;       // current temperature setpoint (°F)
  *      float outletTempF;     // latest outlet temperature from Control (°F)
  *      float stepF;           // current step size for adjustments
+ *      float flowLpm;         // latest flow rate (L/min)
  *      bool  showingSetpoint; // true when user is editing/pending
+ *      bool  showingFlow;     // true when flow overlay is active
  *      bool  outletValid;     // outletTempF is valid
+ *      bool  flowValid;       // flowLpm is valid
  *      bool  runFlag;         // true=ON, false=OFF
  *      uint32_t txDoneCount;  // number of completed transmissions
  *      bool  lastResultOk;    // true=ACK received, false=TX failed
@@ -41,8 +44,11 @@ struct DisplayState {
   float setpointF;
   float outletTempF;
   float stepF;
+  float flowLpm;
   bool showingSetpoint;
+  bool showingFlow;
   bool outletValid;
+  bool flowValid;
   bool runFlag;
   uint32_t txDoneCount;
   bool lastResultOk;

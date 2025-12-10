@@ -45,35 +45,54 @@ void displayDraw(const DisplayState& s) {
   drawRunIcon(s.runFlag);
 
   // Mode label for main value
-  oledDisplay.drawStr(0, 24, s.showingSetpoint ? "SET" : "OUT");
+  const bool showingFlow = s.showingFlow;
+  const bool showingSetpoint = s.showingSetpoint && !showingFlow;  // flow overlay wins
+  oledDisplay.drawStr(0, 24, showingFlow ? "FLOW" : (showingSetpoint ? "SET" : "OUT"));
 
   // ─────────────────────────────
   // Center: main setpoint (large)
   // ─────────────────────────────
   // Big numeric part
-  const bool valueValid = s.showingSetpoint || s.outletValid;
-  const float valueF = s.showingSetpoint ? s.setpointF : s.outletTempF;
+  bool valueValid;
+  float valueF;
+  const char* unitStr;
+  if (showingFlow) {
+    valueValid = s.flowValid;
+    valueF = s.flowLpm;
+    unitStr = "L/m";
+  } else {
+    valueValid = showingSetpoint || s.outletValid;
+    valueF = showingSetpoint ? s.setpointF : s.outletTempF;
+    unitStr =
+        "\xB0"
+        "F";
+  }
 
   oledDisplay.setFont(u8g2_font_logisoso24_tf);  // 24-px tall font
   char tempStr[8];
   if (valueValid) {
-    snprintf(tempStr, sizeof(tempStr), "%3.1f", valueF);
+    if (showingFlow) {
+      snprintf(tempStr, sizeof(tempStr), "%3.2f", valueF);
+    } else {
+      snprintf(tempStr, sizeof(tempStr), "%3.1f", valueF);
+    }
   } else {
     snprintf(tempStr, sizeof(tempStr), "---");
   }
 
   uint16_t tempW = oledDisplay.getStrWidth(tempStr);
-  // Leave room on the right for "°F"
-  uint8_t tempX = (128 - (tempW + 16)) / 2;
+  oledDisplay.setFont(u8g2_font_7x13B_mf);
+  uint16_t unitW = oledDisplay.getStrWidth(unitStr);
+  oledDisplay.setFont(u8g2_font_logisoso24_tf);
+
+  uint8_t tempX = (128 - (tempW + 2 + unitW)) / 2;
   uint8_t tempY = 44;  // baseline
 
   oledDisplay.drawStr(tempX, tempY, tempStr);
 
   // Degree + unit, slightly smaller font
   oledDisplay.setFont(u8g2_font_7x13B_mf);
-  oledDisplay.drawStr(tempX + tempW + 2, tempY,
-                      "\xB0"
-                      "F");
+  oledDisplay.drawStr(tempX + tempW + 2, tempY, unitStr);
 
   // ─────────────────────────────
   // Bottom bar: step size + TX status

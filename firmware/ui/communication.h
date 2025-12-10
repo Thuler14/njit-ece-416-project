@@ -29,6 +29,8 @@
  *      bool     pending;   // true=awaiting ACK for user TX (setpoint/run)
  *      float    outletTempF;  // latest outlet temperature mirrored from Control
  *      bool     outletValid;  // true if outletTempF is valid
+ *      float    flowLpm;      // latest flow rate (L/min) from Control
+ *      bool     flowValid;    // true if flowLpm is valid
  *    };
  * ================================================================
  */
@@ -45,6 +47,8 @@ struct CommStatus {
   bool pending;
   float outletTempF;
   bool outletValid;
+  float flowLpm;
+  bool flowValid;
 };
 
 // Initialize communication layer (ESP-NOW transport setup)

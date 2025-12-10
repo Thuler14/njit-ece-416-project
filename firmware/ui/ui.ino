@@ -26,16 +26,20 @@ static float stepF = SETPOINT_STEP_F;         // current setpoint step
 static bool runFlag = false;                  // true=ON, false=OFF
 static bool setpointDirty = false;            // true when setpoint changed but not yet sent
 static unsigned long lastSetpointEditMs = 0;  // last time the user adjusted setpoint
+static bool flowOverlayLatched = false;       // true while flow overlay is active
 
 // Map UI + comm status into DisplayState and draw on OLED
-static void updateDisplay(const CommStatus& st) {
+static void updateDisplay(const CommStatus& st, bool showingFlow) {
   const bool showingSetpoint = setpointDirty || st.pending;
   DisplayState ds{};
   ds.setpointF = setpointF;
   ds.outletTempF = st.outletTempF;
+  ds.flowLpm = st.flowLpm;
   ds.stepF = stepF;
   ds.showingSetpoint = showingSetpoint;
+  ds.showingFlow = showingFlow;
   ds.outletValid = st.outletValid;
+  ds.flowValid = st.flowValid;
   ds.runFlag = runFlag;
   ds.txDoneCount = st.txCount;
   ds.lastResultOk = st.lastOk;
@@ -56,7 +60,7 @@ void setup() {
   // Initial draw
   CommStatus st{};
   commGetStatus(st);
-  updateDisplay(st);
+  updateDisplay(st, /*showingFlow=*/false);
 }
 
 void loop() {
@@ -68,6 +72,7 @@ void loop() {
   bool displayChanged = false;
   bool txTriggered = false;
   bool sendNow = false;
+  bool flowOverlayActive = flowOverlayLatched;
 
   auto markSetpointDirty = [&]() {
     setpointDirty = true;
@@ -101,6 +106,24 @@ void loop() {
   } else if (ev.okLong) {
     runFlag = !runFlag;
     sendNow = true;  // run/stop toggles send immediately
+    displayChanged = true;
+  } else if (ev.chordFlowLong) {
+    flowOverlayLatched = true;
+    flowOverlayActive = true;
+    displayChanged = true;
+  }
+
+  auto anyNonFlowEvent = [&]() {
+    return ev.chordStepLong || ev.upClick || ev.upDblClick || ev.upLong || ev.upRepeat ||
+           ev.downClick || ev.downDblClick || ev.downLong || ev.downRepeat ||
+           ev.okClick || ev.okDblClick || ev.okLong || ev.okRepeat ||
+           ev.aClick || ev.aDblClick || ev.aLong || ev.aRepeat ||
+           ev.bClick || ev.bDblClick || ev.bLong || ev.bRepeat;
+  };
+
+  if (flowOverlayLatched && anyNonFlowEvent()) {
+    flowOverlayLatched = false;
+    flowOverlayActive = false;
     displayChanged = true;
   }
 
@@ -137,7 +160,8 @@ void loop() {
   if (displayChanged || statusChanged || txTriggered || setpointDirty) {
     if (!statusChanged) commGetStatus(st);
 
-    updateDisplay(st);
+    flowOverlayActive = flowOverlayLatched;
+    updateDisplay(st, flowOverlayActive);
 
     if (txTriggered || statusChanged) {
       if (st.pending || setpointDirty)
