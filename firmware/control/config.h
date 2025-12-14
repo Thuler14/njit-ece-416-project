@@ -76,6 +76,10 @@ constexpr float PID_KI = 0.005f;     // Integral gain (per second)
 constexpr float PID_KD = 0.0f;       // Derivative gain
 constexpr float PID_OUT_MIN = 0.0f;  // Output lower bound (mix ratio)
 constexpr float PID_OUT_MAX = 1.0f;  // Output upper bound (mix ratio)
+constexpr float PID_ERROR_DEADBAND_F = 0.2f;      // No integrate/drive when |error| < deadband
+constexpr float PID_OUTPUT_SLEW_PER_SEC = 0.8f;   // Slow slew (per second, 0-1 scale)
+constexpr float PID_OUTPUT_SLEW_FAST_PER_SEC = 3.0f; // Fast slew when far from setpoint
+constexpr float PID_SLEW_ERROR_THRESH_F = 3.0f;   // Error threshold to use fast slew
 constexpr bool PID_LOG_CSV = true;   // Enable CSV logging (time_ms,out_f,set_f,error_f,ratio)
 
 // ====================================================

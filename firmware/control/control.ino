@@ -108,13 +108,16 @@ void loop() {
     if (cmd.lastOk) {
       setpointF = constrain(cmd.setpointF, SETPOINT_MIN_F, SETPOINT_MAX_F);
       runFlag = cmd.runFlag;
-
-      Serial.printf("CTRL<-UI setpoint=%.1fF run=%s seq=%lu\n",
-                    setpointF,
-                    runFlag ? "ON" : "OFF",
-                    (unsigned long) cmd.lastSeq);
+      if (!PID_LOG_CSV) {
+        Serial.printf("CTRL<-UI setpoint=%.1fF run=%s seq=%lu\n",
+                      setpointF,
+                      runFlag ? "ON" : "OFF",
+                      (unsigned long) cmd.lastSeq);
+      }
     } else {
-      Serial.printf("CTRL<-UI RX failed\n");
+      if (!PID_LOG_CSV) {
+        Serial.printf("CTRL<-UI RX failed\n");
+      }
     }
   }
 
@@ -242,11 +245,13 @@ void loop() {
     activeFault = FaultCode::None;
     enterSafeState(nullptr);
     logCsvIfDue(nowMs, outlet, linkOk);
-    Serial.printf("RUN=OFF | OUT=%.2fF | SET=%.2fF | link=%s | flow=%.2f L/min\n",
-                  outlet.filteredF,
-                  setpointF,
-                  linkOk ? "OK" : "LOST",
-                  flow.lpm);
+    if (!PID_LOG_CSV) {
+      Serial.printf("RUN=OFF | OUT=%.2fF | SET=%.2fF | link=%s | flow=%.2f L/min\n",
+                    outlet.filteredF,
+                    setpointF,
+                    linkOk ? "OK" : "LOST",
+                    flow.lpm);
+    }
     delay(LOOP_DELAY_MS);
     return;
   }
@@ -290,7 +295,9 @@ void loop() {
       initialRatio = constrain(initialRatio, 0.0f, 1.0f);
       applyMixRatio(initialRatio);
       lastRatio = initialRatio;
-      Serial.printf("Initial mixing (filtered): HOT=%.2fF, COLD=%.2fF, SET=%.2fF, ratio=%.2f\n", hotF, coldF, setpointF, initialRatio);
+      if (!PID_LOG_CSV) {
+        Serial.printf("Initial mixing (filtered): HOT=%.2fF, COLD=%.2fF, SET=%.2fF, ratio=%.2f\n", hotF, coldF, setpointF, initialRatio);
+      }
       // If outlet is within 1°F of setpoint, switch to PID
       if (fabs(outletTempF - setpointF) < 1.0f) {
         initialMixingDone = true;
@@ -309,8 +316,21 @@ void loop() {
                           : (sampleMs - lastOutletSampleMs) / 1000.0f;
   lastOutletSampleMs = sampleMs;
 
-  const float errorF = setpointF - outletTempF;
-  const float ratio = pi.update(errorF, dtSec);
+  float errorF = setpointF - outletTempF;
+  if (fabs(errorF) < PID_ERROR_DEADBAND_F) {
+    errorF = 0.0f; // Hold near setpoint to avoid hunting
+  }
+
+  const float rawRatio = pi.update(errorF, dtSec);
+
+  // Slew-limit ratio to avoid abrupt swings; allow faster moves when far from setpoint
+  const float slewPerSec = (fabs(errorF) > PID_SLEW_ERROR_THRESH_F)
+                               ? PID_OUTPUT_SLEW_FAST_PER_SEC
+                               : PID_OUTPUT_SLEW_PER_SEC;
+  const float maxStep = slewPerSec * dtSec;
+  float ratioStep = rawRatio - lastRatio;
+  ratioStep = constrain(ratioStep, -maxStep, maxStep);
+  const float ratio = constrain(lastRatio + ratioStep, PID_OUT_MIN, PID_OUT_MAX);
   lastU = pi.lastOutput();
   lastRatio = ratio;
   applyMixRatio(ratio);

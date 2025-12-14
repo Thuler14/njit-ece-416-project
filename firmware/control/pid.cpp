@@ -12,17 +12,34 @@ PID::PID(float kp, float ki, float kd, float minOut, float maxOut)
       lastOutputValue(0.0f) {}
 
 float PID::update(float error, float dtSeconds) {
-  integral += error * Ki * dtSeconds;
-  integral = constrain(integral, outMin, outMax);
+  // Reset integrator on zero-crossing to limit overshoot around setpoint
+  if (hasPrevError && (error * prevError) < 0.0f) {
+    integral = 0.0f;
+  }
 
   float derivative = 0.0f;
   if (dtSeconds > 0.0f && hasPrevError) {
     derivative = (error - prevError) / dtSeconds;
   }
+
+  // Conditional integration (anti-windup)
+  float proposedIntegral = integral + error * Ki * dtSeconds;
+  proposedIntegral = constrain(proposedIntegral, outMin, outMax);
+
+  float provisionalOutput = Kp * error + proposedIntegral + Kd * derivative;
+
+  // If output would saturate and integration would push further into saturation, freeze integrator
+  bool saturatingHigh = (provisionalOutput > outMax) && (error > 0.0f);
+  bool saturatingLow = (provisionalOutput < outMin) && (error < 0.0f);
+  if (!saturatingHigh && !saturatingLow) {
+    integral = proposedIntegral;
+  }
+
+  float output = Kp * error + integral + Kd * derivative;
+
   prevError = error;
   hasPrevError = true;
 
-  float output = Kp * error + integral + Kd * derivative;
   lastOutputValue = constrain(output, outMin, outMax);
   return lastOutputValue;
 }
