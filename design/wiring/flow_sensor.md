@@ -10,4 +10,4 @@ One **YF-S201** Hall-effect flow sensor is used to measure the total outlet wate
 | Red | VCC | 5V |
 | Black | GND | GND |
 
-> 📷 Photo: [`mechanical/photos/m2_flow_sensor_wiring.jpg`](../../../mechanical/photos/m2_flow_sensor_wiring.jpg)
+> 📷 Photo: [`mechanical/photos/m2_flow_sensor_wiring.jpg`](../../mechanical/photos/m2_flow_sensor_wiring.jpg)

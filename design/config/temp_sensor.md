@@ -3,7 +3,7 @@
 ## Overview
 
 - The control module uses three DS18B20 digital temperature sensors connected via a shared OneWire bus.  
-- Each sensor has a unique 64-bit ROM address and is configured in [`firmware/control/config.h`](../../../firmware/control/config.h).
+- Each sensor has a unique 64-bit ROM address and is configured in [`firmware/control/config.h`](../../firmware/control/config.h).
 
 ---
 
@@ -16,7 +16,7 @@
 | `TEMP_COLD_ADDR` | Cold inlet sensor | `0x2884B3B4000000B6` |
 | `TEMP_OUT_ADDR` | Outlet sensor | `0x284DF1BA000000C0` |
 
-> Discovered using [`firmware/tools/m1_temp_scan/m1_temp_scan.ino`](../../../firmware/tools/m1_temp_scan/m1_temp_scan.ino).
+> Discovered using [`firmware/tools/m1_temp_scan/m1_temp_scan.ino`](../../firmware/tools/m1_temp_scan/m1_temp_scan.ino).
 
 ---
 

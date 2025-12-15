@@ -4,7 +4,7 @@
 
 - The system uses **ESP-NOW** for direct, low-latency wireless communication between the **Control** and **UI** modules.
 - Both ESP32 boards operate in **Station (STA)** mode on a fixed Wi-Fi channel to maintain a stable one-to-one link.
-- MAC addresses and encryption keys are configured in [`firmware/config/config.h`](../../../firmware/config/config.h).
+- MAC addresses and encryption keys are configured in [`firmware/config/config.h`](../../firmware/common/config.h).
 
 ---
 
@@ -15,7 +15,7 @@
 | `COMM_CTRL_MAC` | Control unit | `3C:8A:1F:80:A9:D4` |
 | `COMM_UI_MAC` | UI unit | `8C:4F:00:35:9B:F4` |
 
-> Discovered using [`firmware/tools/m2_mac_scan/m2_mac_scan.ino`](../../../firmware/tools/m2_mac_scan/m2_mac_scan.ino).
+> Discovered using [`firmware/tools/m2_mac_scan/m2_mac_scan.ino`](../../firmware/tools/m2_mac_scan/m2_mac_scan.ino).
 
 ---
 

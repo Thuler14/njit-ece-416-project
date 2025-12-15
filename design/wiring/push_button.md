@@ -10,4 +10,4 @@ Five momentary push buttons are used for the UI (active-low with internal pull-u
 | A | Action A | GPIO 14 |
 | B | Action B | GPIO 13 |
 
-> 📷 Photo: `mechanical/photos/m1_push_button_wiring.jpg`
+> 📷 Photo: [`mechanical/photos/m1_push_button_wiring.jpg`](../../mechanical/photos/m1_push_button_wiring.jpg)

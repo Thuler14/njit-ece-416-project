@@ -3,7 +3,7 @@
 ## Overview
 
 - Two **MG996R servo motors** are used to control the cold and hot water valves.  
-- Each servo is calibrated for fully closed and fully open positions, with pulse widths defined in [`firmware/control/config.h`](../../../firmware/control/config.h).
+- Each servo is calibrated for fully closed and fully open positions, with pulse widths defined in [`firmware/control/config.h`](../../firmware/control/config.h).
 - The calibration ensures consistent mechanical limits and prevents overtravel.
 
 ---
@@ -25,7 +25,7 @@
 | `SERVO_COLD_MAX_US` | Cold valve — fully **closed** position | `2080` |
 | `SERVO_GUARD_US` | Safety margin from mechanical stop | `15` |
 
-> Calibrated using [`firmware/tools/servo_calibration/m1_servo_calibration.ino`](../../../firmware/tools/m1_servo_calibration/m1_servo_calibration.ino).
+> Calibrated using [`firmware/tools/servo_calibration/m1_servo_calibration.ino`](../../firmware/tools/m1_servo_calibration/m1_servo_calibration.ino).
 
 ---
 

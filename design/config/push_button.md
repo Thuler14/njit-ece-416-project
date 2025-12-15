@@ -4,7 +4,7 @@
 
 - Five **momentary pushbuttons** provide local user input for temperature control and preset functions.
 - Each button is connected to an **ESP32 GPIO** with **internal pull-ups enabled** (active-low).
-- Button configuration is defined in [`firmware/ui/config.h`](../../../firmware/ui/config.h).
+- Button configuration is defined in [`firmware/ui/config.h`](../../firmware/ui/config.h).
 
 ---
 

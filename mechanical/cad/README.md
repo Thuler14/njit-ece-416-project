@@ -1,11 +1,9 @@
 # mechanical/cad
+Fusion 360 models for mounts, enclosure pieces, and printable hardware.
 
-CAD models for:
+## Layout
+- `servo_mount/` — bracket to hold the MG996R servo at the valve.
+- `valve_coupler/` — coupler between servo horn and valve stem.
+- `exports/` — STL exports for printing (name by milestone/task).
 
-- Servo mount (for valve actuation)
-- Valve coupler (connects servo horn to valve stem)
-- Enclosure (for UI and control boards, to be designed)
-
-All parts are modeled in Fusion 360.
-
-STL files for 3D printing are saved in the `exports/` folder.
+Add new variants with a short note on fitment/tolerances; keep param edits in the CAD source and export fresh STLs when dimensions change.

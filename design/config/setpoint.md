@@ -4,7 +4,7 @@
 
 - Defines default, safety, and preset temperature values for system operation.  
 - Values are expressed in **degrees Fahrenheit (°F)**.  
-- Configuration is defined in [`firmware/ui/config.h`](../../../firmware/common/config.h).
+- Configuration is defined in [`firmware/ui/config.h`](../../firmware/common/config.h).
 
 ---
 

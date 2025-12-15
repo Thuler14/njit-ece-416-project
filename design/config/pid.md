@@ -3,7 +3,7 @@
 ## Overview
 
 - PI(D) controller drives the hot/cold valve mix ratio to hold the outlet temperature at the setpoint.  
-- PID configuration is defined in [`firmware/control/config.h`](../../../firmware/control/config.h).
+- PID configuration is defined in [`firmware/control/config.h`](../../firmware/control/config.h).
 
 ---
 

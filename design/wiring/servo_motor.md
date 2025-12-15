@@ -12,4 +12,4 @@ Two MG996R servos are used to control the cold and hot water valves.
 | Both | V+ | 6 V |
 | Both | GND | GND |
 
-> 📷 Photo: `mechanical/photos/m1_servo_motor_wiring.jpg`
+> 📷 Photo: [`mechanical/photos/m1_servo_motor_wiring.jpg`](../../mechanical/photos/m1_servo_motor_wiring.jpg)

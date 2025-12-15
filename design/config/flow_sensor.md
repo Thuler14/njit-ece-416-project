@@ -4,7 +4,7 @@
 
 - The control module uses one **YF-S201** Hall-effect flow sensor to measure the total outlet flow rate.
 - The sensor outputs a digital pulse signal proportional to flow velocity, detected via an interrupt on the ESP32. 
-- Configuration constants are defined in [`firmware/control/config.h`](../../../firmware/control/config.h).
+- Configuration constants are defined in [`firmware/control/config.h`](../../firmware/control/config.h).
 
 ---
 

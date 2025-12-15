@@ -14,4 +14,4 @@ The **128×64 px SSD1309** OLED connects via a ESP32’s **VSPI bus** using a **
 | 6 | DC | GPIO 22 |
 | 7 | CS | GPIO 5 |
 
-> 📷 Photo: `mechanical/photos/m1_oled_display_wiring.jpg`
+> 📷 Photo: [`mechanical/photos/m1_oled_display_wiring.jpg`](../../mechanical/photos/m1_oled_display_wiring.jpg)

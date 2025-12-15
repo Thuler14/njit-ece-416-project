@@ -4,7 +4,7 @@
 
 - The system uses a **128×64 px SSD1309** OLED driven over **SPI** using the **U8g2** graphics library.
 - It shows setpoint, run state, and status indicators for transmission activity.
-- Display configuration is defined in [`firmware/ui/config.h`](../../../firmware/ui/config.h).
+- Display configuration is defined in [`firmware/ui/config.h`](../../firmware/ui/config.h).
 
 ---
 
